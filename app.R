@@ -13,7 +13,7 @@ library(tidyverse)
 
 
 # assume all of the tsv files in this directory are data of the same kind that I want to visualize
-allData <- do.call(rbind, lapply(list.files(pattern = "*.tsv"), read.delim))
+allData <- do.call(rbind, lapply(list.files(pattern = "*Totals.tsv"), read.delim))
 
 # convert the dates to the internal format
 allData$fullDate <- allData$date
