@@ -13,18 +13,21 @@ library(tidyverse)
 
 
 # assume all of the tsv files in this directory are data of the same kind that I want to visualize
-allData <- do.call(rbind, lapply(list.files(pattern = "*Totals.tsv"), read.delim))
+entriesData <- do.call(rbind, lapply(list.files(pattern = "*Totals.tsv"), read.delim))
+
+locData <- do.call(rbind, lapply(list.files(pattern = "*Stops.tsv"), read.delim))
+locData <- data.frame(locData)
 
 # convert the dates to the internal format
-allData$fullDate <- allData$date
-allData$newDate <- as.Date(allData$fullDate, "%m/%d/%Y")
-allData$Date <- NULL
+entriesData$fullDate <- entriesData$date
+entriesData$newDate <- as.Date(entriesData$fullDate, "%m/%d/%Y")
+entriesData$Date <- NULL
 
 # add year day month column
-allData <- separate(data = allData, col = date, into = c("month", "date", "year"), sep = "/")
+entriesData <- separate(data = entriesData, col = date, into = c("month", "date", "year"), sep = "/")
 
 # convert the columns to numeric
-allData[ c("month", "date", "year")] <- sapply(allData[ c("month", "date", "year")],as.numeric)
+entriesData[ c("month", "date", "year")] <- sapply(entriesData[ c("month", "date", "year")],as.numeric)
 
 add_monthChar <- function(df) {
   # add new column for month that contains char
@@ -44,10 +47,10 @@ add_monthChar <- function(df) {
   df
 }
 
-allData <- add_monthChar(allData)
+entriesData <- add_monthChar(entriesData)
 
 # parse to days in the week
-allData$dayChar <- weekdays(allData$newDate)
+entriesData$dayChar <- weekdays(entriesData$newDate)
 
 # add new column for week that contains int
 add_dayToDayChar <- function(df) {
@@ -73,37 +76,61 @@ add_dayCharToDay <- function(df) {
   
   df
 }
-allData <- add_dayCharToDay(allData)
+entriesData <- add_dayCharToDay(entriesData)
 
 
 # add new column for char entries that contains comma in the number
-allData$ridesChar <- formatC(allData$rides, format = "d", big.mark = ",")
+entriesData$ridesChar <- formatC(entriesData$rides, format = "d", big.mark = ",")
 
 # turn to data frame
-all_data_df <- data.frame(allData)
+all_data_df <- data.frame(entriesData)
 
-# set all values I won't be using to NULL
-all_data_df$station_id <- NULL
-all_data_df$dayType <- NULL
-all_data_df$fullDate <- NULL
+all_data_df$stationname[all_data_df$stationname == "OHare Airport"] <- "O'Hare"
 
-all_data_df$stationname[all_data_df$stationname == "OHare Airport"] <- "O'Hare Airport"
+# transfer data from location file to main data frame
+all_data_df$Location <- locData$Location[match(all_data_df$stationname, locData$STATION_NAME)]
 
-all_data_df_uic <- subset(all_data_df, all_data_df$stationname == "UIC-Halsted")
-all_data_df_ohare <- subset(all_data_df, all_data_df$stationname == "O'Hare Airport")
-all_data_df_rose <- subset(all_data_df, all_data_df$stationname == "Rosemont")
+# getting rid of the stations with no location info
+all_data_df <- subset(all_data_df, is.na(Location))
 
-hideAllDesc <- function() {
-  shinyjs::hide(id = "insight1")
-  shinyjs::hide(id = "insight2")
-  shinyjs::hide(id = "insight3")
-  shinyjs::hide(id = "insight4")
-  shinyjs::hide(id = "insight5")
-  shinyjs::hide(id = "insight6")
-  shinyjs::hide(id = "insight7")
-  shinyjs::hide(id = "insight8")
-  shinyjs::hide(id = "insight9")
-  shinyjs::hide(id = "insight10")
+all_data_df$RedLine <- locData$RED[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$BlueLine <- locData$BLUE[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$GreenLine <- locData$G[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$BrownLine <- locData$BRN[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$PurpleLine <- locData$Pexp[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$YellowLine <- locData$Y[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$PinkLine <- locData$Pnk[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$OrangeLine <- locData$O[match(all_data_df$stationname, locData$STATION_NAME)]
+
+Red_df <- subset(all_data_df, all_data_df$RedLine == "true")
+Blue_df <- subset(all_data_df, all_data_df$BlueLine == "true")
+Green_df <- subset(all_data_df, all_data_df$GreenLine == "true")
+Brown_df <- subset(all_data_df, all_data_df$BrownLine == "true")
+Purple_df <- subset(all_data_df, all_data_df$PurpleLine == "true")
+Yellow_df <- subset(all_data_df, all_data_df$YellowLine == "true")
+Pink_df <- subset(all_data_df, all_data_df$PinkLine == "true")
+Orange_df <- subset(all_data_df, all_data_df$OrangeLine == "true")
+
+station_names <- unique(all_data_df[c("stationname")])
+station_names <- station_names[order(station_names$stationname), ]
+
+# create dataframe for a particular station
+create_station_df <- function(station) {
+  subset(all_data_df, all_data_df$stationname == station)
+}
+
+# get data frame for a particular station
+get_station_df <- function(station) {
+  station_df[[1]][which(station_names == station)]
+}
+
+# create a dataframe for each station
+station_df <- list(lapply(station_names, create_station_df))
+
+starting_df <- subset(all_data_df, all_data_df$newDate == "2021-08-23")
+
+every_nth = function(n) {
+  return(function(x) {x[c(TRUE, rep(FALSE, n - 1))]})
 }
 
 # Create the shiny application
