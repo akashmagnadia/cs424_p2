@@ -44,7 +44,7 @@ library(leaflet)
 #   df$monthChar[df$month == 10] <- "Oct"
 #   df$monthChar[df$month == 11] <- "Nov"
 #   df$monthChar[df$month == 12] <- "Dec"
-#   
+# 
 #   df
 # }
 # 
@@ -62,7 +62,7 @@ library(leaflet)
 #   df$day[df$dayChar == "Friday"] <- 5
 #   df$day[df$dayChar == "Saturday"] <- 6
 #   df$day[df$dayChar == "Sunday"] <- 7
-#   
+# 
 #   df
 # }
 # entriesData <- add_dayCharToDay(entriesData)
@@ -115,8 +115,6 @@ library(leaflet)
 # 
 # # create a dataframe for each station
 # station_df <- list(lapply(station_names, create_station_df))
-# 
-# starting_df <- subset(all_data_df, all_data_df$newDate == "2021-08-23")
 # 
 # every_nth = function(n) {
 #   return(function(x) {x[c(TRUE, rep(FALSE, n - 1))]})
@@ -186,6 +184,10 @@ ui <- dashboardPage(
                             max = "2021-11-30",
                             format = "m / dd / yyyy"
                   ),
+                  selectInput("bar_chart_type",
+                              "Sort Bar Chart",
+                              choices = c("Alphabetical", "Minimum", "Maximum"),
+                              selected = c("Minimum")),
                   selectInput("stations",
                               label = "Stations",
                               choices = station_names,
@@ -280,14 +282,51 @@ server <- function(input, output, session) {
   # create a bar graph
   
   output$mainBarGraph <- renderPlot({
-    ggplot(data = starting_df, aes(x = stationname, y = rides)) + 
-      geom_bar(stat = 'identity', aes(fill = rides)) +
-      scale_y_continuous(breaks = scales::pretty_breaks(n = 10), labels = comma) +
-      labs(x = "Stations",
-           y = "Entries") +
-      ggtitle(paste("Entries Station")) +
-      theme(legend.position = "none") + 
-      coord_flip()
+    
+    df = sum_of_station_df()
+    toReturn <- NULL
+    
+    if (input$bar_chart_type == "Alphabetical") {
+      toReturn <- ggplot(data = df, aes(x = station_names, y = rides)) + 
+        geom_bar(stat = 'identity', aes(fill = toHighlight)) +
+        scale_x_discrete(limits = rev) +
+        scale_y_continuous(breaks = scales::pretty_breaks(n = 10), labels = comma) +
+        labs(x = "Stations",
+             y = "Entries") +
+        ggtitle(paste("Stations in alphabetical order")) +
+        theme(legend.position = "none") + 
+        coord_flip() +
+        scale_fill_manual( values = c( "Yes" = "tomato", "No" = "gray" ), guide = FALSE )
+    }
+    
+    if (input$bar_chart_type == "Minimum") {
+      print("HERE")
+      toReturn <- ggplot(data = df, aes(x = reorder(station_names, rides), y = rides)) + 
+        geom_bar(stat = 'identity', aes(fill = toHighlight)) +
+        scale_x_discrete(limits = rev) +
+        scale_y_continuous(breaks = scales::pretty_breaks(n = 10), labels = comma) +
+        labs(x = "Stations",
+             y = "Entries") +
+        ggtitle(paste("Stations in order of lowest to highest riders")) +
+        theme(legend.position = "none") + 
+        coord_flip() +
+        scale_fill_manual( values = c( "Yes" = "tomato", "No" = "gray" ), guide = FALSE )
+    }
+    
+    if (input$bar_chart_type == "Maximum") {
+      toReturn <- ggplot(data = df, aes(x = reorder(station_names, -rides), y = rides)) + 
+        geom_bar(stat = 'identity', aes(fill = toHighlight)) +
+        scale_x_discrete(limits = rev) +
+        scale_y_continuous(breaks = scales::pretty_breaks(n = 10), labels = comma) +
+        labs(x = "Stations",
+             y = "Entries") +
+        ggtitle(paste("Stations in order of highest to lowest riders")) +
+        theme(legend.position = "none") + 
+        coord_flip() +
+        scale_fill_manual( values = c( "Yes" = "tomato", "No" = "gray" ), guide = FALSE )
+    }
+    
+    toReturn
   })
   
   #################################################################
@@ -321,6 +360,32 @@ server <- function(input, output, session) {
       )
     )
   })
+  
+  #################################################################
+  
+  # create sum of rides for a station
+  
+  sum_of_station_df <- reactive({
+    rides <- array(unlist(
+      lapply(station_names, 
+             sum_of_station)
+    )
+    )
+    
+    # create a data frame with station names and sum of rides for the stations
+    toReturn <- data.frame(station_names, rides)
+    
+    # add a column to state whether to highlight or not
+    toReturn <- toReturn %>% rowwise() %>%
+      mutate(toHighlight = if_else(station_names == input$stations, "Yes", "No"))
+    
+    toReturn
+  })
+  
+  sum_of_station <- function(station) {
+    df <- subset(all_data_df, all_data_df$newDate == input$single_date_input)
+    sum(df[df$stationname == station,]$rides)
+  }
   
   #################################################################
   
