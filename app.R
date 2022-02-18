@@ -13,112 +13,112 @@ library(tidyverse)
 library(leaflet)
 
 
-# # assume all of the tsv files in this directory are data of the same kind that I want to visualize
-# entriesData <- do.call(rbind, lapply(list.files(pattern = "*Totals.tsv"), read.delim))
-# 
-# locData <- do.call(rbind, lapply(list.files(pattern = "*Stops.tsv"), read.delim))
-# locData <- data.frame(locData)
-# 
-# # convert the dates to the internal format
-# entriesData$fullDate <- entriesData$date
-# entriesData$newDate <- as.Date(entriesData$fullDate, "%m/%d/%Y")
-# entriesData$Date <- NULL
-# 
-# # add year day month column
-# entriesData <- separate(data = entriesData, col = date, into = c("month", "date", "year"), sep = "/")
-# 
-# # convert the columns to numeric
-# entriesData[ c("month", "date", "year")] <- sapply(entriesData[ c("month", "date", "year")],as.numeric)
-# 
-# add_monthChar <- function(df) {
-#   # add new column for month that contains char
-#   df$monthChar[df$month == 1] <- "Jan"
-#   df$monthChar[df$month == 2] <- "Feb"
-#   df$monthChar[df$month == 3] <- "Mar"
-#   df$monthChar[df$month == 4] <- "Apr"
-#   df$monthChar[df$month == 5] <- "May"
-#   df$monthChar[df$month == 6] <- "Jun"
-#   df$monthChar[df$month == 7] <- "Jul"
-#   df$monthChar[df$month == 8] <- "Aug"
-#   df$monthChar[df$month == 9] <- "Sep"
-#   df$monthChar[df$month == 10] <- "Oct"
-#   df$monthChar[df$month == 11] <- "Nov"
-#   df$monthChar[df$month == 12] <- "Dec"
-# 
-#   df
-# }
-# 
-# entriesData <- add_monthChar(entriesData)
-# 
-# # parse to days in the week
-# entriesData$dayChar <- weekdays(entriesData$newDate)
-# 
-# # add new column for week that contains int
-# add_dayCharToDay <- function(df) {
-#   df$day[df$dayChar == "Monday"] <- 1
-#   df$day[df$dayChar == "Tuesday"] <- 2
-#   df$day[df$dayChar == "Wednesday"] <- 3
-#   df$day[df$dayChar == "Thursday"] <- 4
-#   df$day[df$dayChar == "Friday"] <- 5
-#   df$day[df$dayChar == "Saturday"] <- 6
-#   df$day[df$dayChar == "Sunday"] <- 7
-# 
-#   df
-# }
-# entriesData <- add_dayCharToDay(entriesData)
-# 
-# # add new column for char entries that contains comma in the number
-# entriesData$ridesChar <- formatC(entriesData$rides, format = "d", big.mark = ",")
-# 
-# # turn to data frame
-# all_data_df <- data.frame(entriesData)
-# 
-# all_data_df$stationname[all_data_df$stationname == "OHare Airport"] <- "O'Hare"
-# 
-# # transfer data from location file to main data frame
-# all_data_df$long <- locData$long[match(all_data_df$stationname, locData$STATION_NAME)]
-# all_data_df$lat <- locData$lat[match(all_data_df$stationname, locData$STATION_NAME)]
-# 
-# # getting rid of the stations with no location info
-# all_data_df <- subset(all_data_df, !is.na(long))
-# 
-# all_data_df$RedLine <- locData$RED[match(all_data_df$stationname, locData$STATION_NAME)]
-# all_data_df$BlueLine <- locData$BLUE[match(all_data_df$stationname, locData$STATION_NAME)]
-# all_data_df$GreenLine <- locData$G[match(all_data_df$stationname, locData$STATION_NAME)]
-# all_data_df$BrownLine <- locData$BRN[match(all_data_df$stationname, locData$STATION_NAME)]
-# all_data_df$PurpleLine <- locData$Pexp[match(all_data_df$stationname, locData$STATION_NAME)]
-# all_data_df$YellowLine <- locData$Y[match(all_data_df$stationname, locData$STATION_NAME)]
-# all_data_df$PinkLine <- locData$Pnk[match(all_data_df$stationname, locData$STATION_NAME)]
-# all_data_df$OrangeLine <- locData$O[match(all_data_df$stationname, locData$STATION_NAME)]
-# 
-# Red_df <- subset(all_data_df, all_data_df$RedLine == "true")
-# Blue_df <- subset(all_data_df, all_data_df$BlueLine == "true")
-# Green_df <- subset(all_data_df, all_data_df$GreenLine == "true")
-# Brown_df <- subset(all_data_df, all_data_df$BrownLine == "true")
-# Purple_df <- subset(all_data_df, all_data_df$PurpleLine == "true")
-# Yellow_df <- subset(all_data_df, all_data_df$YellowLine == "true")
-# Pink_df <- subset(all_data_df, all_data_df$PinkLine == "true")
-# Orange_df <- subset(all_data_df, all_data_df$OrangeLine == "true")
-# 
-# station_names <- unique(all_data_df[c("stationname")])
-# station_names <- station_names[order(station_names$stationname), ]
-# 
-# # create dataframe for a particular station
-# create_station_df <- function(station) {
-#   subset(all_data_df, all_data_df$stationname == station)
-# }
-# 
-# # get data frame for a particular station
-# get_station_df <- function(station) {
-#   station_df[[1]][which(station_names == station)]
-# }
-# 
-# # create a dataframe for each station
-# station_df <- list(lapply(station_names, create_station_df))
-# 
-# every_nth = function(n) {
-#   return(function(x) {x[c(TRUE, rep(FALSE, n - 1))]})
-# }
+# assume all of the tsv files in this directory are data of the same kind that I want to visualize
+entriesData <- do.call(rbind, lapply(list.files(pattern = "*Totals.tsv"), read.delim))
+
+locData <- do.call(rbind, lapply(list.files(pattern = "*Stops.tsv"), read.delim))
+locData <- data.frame(locData)
+
+# convert the dates to the internal format
+entriesData$fullDate <- entriesData$date
+entriesData$newDate <- as.Date(entriesData$fullDate, "%m/%d/%Y")
+entriesData$Date <- NULL
+
+# add year day month column
+entriesData <- separate(data = entriesData, col = date, into = c("month", "date", "year"), sep = "/")
+
+# convert the columns to numeric
+entriesData[ c("month", "date", "year")] <- sapply(entriesData[ c("month", "date", "year")],as.numeric)
+
+add_monthChar <- function(df) {
+  # add new column for month that contains char
+  df$monthChar[df$month == 1] <- "Jan"
+  df$monthChar[df$month == 2] <- "Feb"
+  df$monthChar[df$month == 3] <- "Mar"
+  df$monthChar[df$month == 4] <- "Apr"
+  df$monthChar[df$month == 5] <- "May"
+  df$monthChar[df$month == 6] <- "Jun"
+  df$monthChar[df$month == 7] <- "Jul"
+  df$monthChar[df$month == 8] <- "Aug"
+  df$monthChar[df$month == 9] <- "Sep"
+  df$monthChar[df$month == 10] <- "Oct"
+  df$monthChar[df$month == 11] <- "Nov"
+  df$monthChar[df$month == 12] <- "Dec"
+
+  df
+}
+
+entriesData <- add_monthChar(entriesData)
+
+# parse to days in the week
+entriesData$dayChar <- weekdays(entriesData$newDate)
+
+# add new column for week that contains int
+add_dayCharToDay <- function(df) {
+  df$day[df$dayChar == "Monday"] <- 1
+  df$day[df$dayChar == "Tuesday"] <- 2
+  df$day[df$dayChar == "Wednesday"] <- 3
+  df$day[df$dayChar == "Thursday"] <- 4
+  df$day[df$dayChar == "Friday"] <- 5
+  df$day[df$dayChar == "Saturday"] <- 6
+  df$day[df$dayChar == "Sunday"] <- 7
+
+  df
+}
+entriesData <- add_dayCharToDay(entriesData)
+
+# add new column for char entries that contains comma in the number
+entriesData$ridesChar <- formatC(entriesData$rides, format = "d", big.mark = ",")
+
+# turn to data frame
+all_data_df <- data.frame(entriesData)
+
+all_data_df$stationname[all_data_df$stationname == "OHare Airport"] <- "O'Hare"
+
+# transfer data from location file to main data frame
+all_data_df$long <- locData$long[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$lat <- locData$lat[match(all_data_df$stationname, locData$STATION_NAME)]
+
+# getting rid of the stations with no location info
+all_data_df <- subset(all_data_df, !is.na(long))
+
+all_data_df$RedLine <- locData$RED[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$BlueLine <- locData$BLUE[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$GreenLine <- locData$G[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$BrownLine <- locData$BRN[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$PurpleLine <- locData$Pexp[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$YellowLine <- locData$Y[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$PinkLine <- locData$Pnk[match(all_data_df$stationname, locData$STATION_NAME)]
+all_data_df$OrangeLine <- locData$O[match(all_data_df$stationname, locData$STATION_NAME)]
+
+Red_df <- subset(all_data_df, all_data_df$RedLine == "true")
+Blue_df <- subset(all_data_df, all_data_df$BlueLine == "true")
+Green_df <- subset(all_data_df, all_data_df$GreenLine == "true")
+Brown_df <- subset(all_data_df, all_data_df$BrownLine == "true")
+Purple_df <- subset(all_data_df, all_data_df$PurpleLine == "true")
+Yellow_df <- subset(all_data_df, all_data_df$YellowLine == "true")
+Pink_df <- subset(all_data_df, all_data_df$PinkLine == "true")
+Orange_df <- subset(all_data_df, all_data_df$OrangeLine == "true")
+
+station_names <- unique(all_data_df[c("stationname")])
+station_names <- station_names[order(station_names$stationname), ]
+
+# create data frame for a particular station
+create_station_df <- function(station) {
+  subset(all_data_df, all_data_df$stationname == station)
+}
+
+# get data frame for a particular station
+get_station_df <- function(station) {
+  station_df[[1]][which(station_names == station)]
+}
+
+# create a data frame for each station
+station_df <- list(lapply(station_names, create_station_df))
+
+every_nth = function(n) {
+  return(function(x) {x[c(TRUE, rep(FALSE, n - 1))]})
+}
 
 # position to view all CTA stations on map
 default_long <- -87.658753
@@ -267,7 +267,7 @@ server <- function(input, output, session) {
     m <- getBaseMap()
     
     m <- m %>% addCircleMarkers(data = locData, ~long, ~lat, 
-                                popup = locData$STOP_NAME, 
+                                popup = locData$STATION_NAME, 
                                 weight = 3, 
                                 radius = 10,
                                 color = "#70FFF8", 
@@ -300,13 +300,12 @@ server <- function(input, output, session) {
     }
     
     if (input$bar_chart_type == "Minimum") {
-      print("HERE")
       toReturn <- ggplot(data = df, aes(x = reorder(station_names, rides), y = rides)) + 
         geom_bar(stat = 'identity', aes(fill = toHighlight)) +
         scale_x_discrete(limits = rev) +
         scale_y_continuous(breaks = scales::pretty_breaks(n = 10), labels = comma) +
         labs(x = "Stations",
-             y = "Entries") +
+             y = "Increase and Decrease in Entries") +
         ggtitle(paste("Stations in order of lowest to highest riders")) +
         theme(legend.position = "none") + 
         coord_flip() +
@@ -319,7 +318,7 @@ server <- function(input, output, session) {
         scale_x_discrete(limits = rev) +
         scale_y_continuous(breaks = scales::pretty_breaks(n = 10), labels = comma) +
         labs(x = "Stations",
-             y = "Entries") +
+             y = "Increase and Decrease in Entries") +
         ggtitle(paste("Stations in order of highest to lowest riders")) +
         theme(legend.position = "none") + 
         coord_flip() +
@@ -336,6 +335,24 @@ server <- function(input, output, session) {
   output$mainTable <- renderUI({
     # format the table layout
     
+    toReturn <- sum_of_station_df()
+    
+    # rename
+    names(toReturn)[1] <- "Station"
+    names(toReturn)[2] <- "Entries"
+    
+    colToKeep <- c("Station", "Entries")
+    toReturn <- toReturn[colToKeep]
+    
+    # add comma - turns into char
+    toReturn$Entries <- formatC(toReturn$Entries, format = "d", big.mark = ",")
+    
+    if (input$range_date_check) {
+      names(toReturn)[2] <- "Difference in Entries"
+    }
+    
+    toReturn
+    
     div(
       tags$head(
         tags$style(
@@ -348,7 +365,7 @@ server <- function(input, output, session) {
       ),
       
       datatable(
-        locData,
+        toReturn,
         options = list(
           pageLength = 10,
           lengthChange = FALSE,
@@ -366,11 +383,31 @@ server <- function(input, output, session) {
   # create sum of rides for a station
   
   sum_of_station_df <- reactive({
-    rides <- array(unlist(
-      lapply(station_names, 
-             sum_of_station)
-    )
-    )
+    rides <- NULL
+    
+    if (input$single_date_check) {
+      rides <- array(unlist(
+        lapply(station_names, 
+               sum_of_station_single_date)
+      )
+      )
+    }
+    
+    if (input$range_date_check) {
+      start <- array(unlist(
+        lapply(station_names, 
+               sum_of_station_start_date)
+      )
+      )
+      
+      end <- array(unlist(
+        lapply(station_names, 
+               sum_of_station_end_date)
+      )
+      )
+      
+      rides <- array(unlist(Map('-', end, start)))
+    }
     
     # create a data frame with station names and sum of rides for the stations
     toReturn <- data.frame(station_names, rides)
@@ -382,8 +419,18 @@ server <- function(input, output, session) {
     toReturn
   })
   
-  sum_of_station <- function(station) {
+  sum_of_station_single_date <- function(station) {
     df <- subset(all_data_df, all_data_df$newDate == input$single_date_input)
+    sum(df[df$stationname == station,]$rides)
+  }
+  
+  sum_of_station_start_date <- function(station) {
+    df <- subset(all_data_df, all_data_df$newDate == input$range_start_date_input)
+    sum(df[df$stationname == station,]$rides)
+  }
+  
+  sum_of_station_end_date <- function(station) {
+    df <- subset(all_data_df, all_data_df$newDate == input$range_end_date_input)
     sum(df[df$stationname == station,]$rides)
   }
   
