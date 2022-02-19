@@ -11,6 +11,7 @@ library(DT)
 library(tidyr)
 library(tidyverse)
 library(leaflet)
+library(leaflet.extras)
 library(sf)
 
 # # assume all of the tsv files in this directory are data of the same kind that I want to visualize
@@ -123,6 +124,7 @@ library(sf)
 # position to view all CTA stations on map
 default_long <- -87.658753
 default_lat <- 41.866568
+default_zoom <- 12
 
 # Create the shiny application
 ui <- dashboardPage(
@@ -199,6 +201,9 @@ ui <- dashboardPage(
                   actionButton("next_day_btn",
                                label = "Next Day"
                   ),
+                  actionButton("reset_map_btn",
+                               label = "Reset Button"
+                  ),
                   width = 1
                 ),
                 mainPanel(
@@ -259,7 +264,8 @@ server <- function(input, output, session) {
     # creating initial map
     m <- leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addTiles() %>%  # Add default OpenStreetMap map tiles
-      setView(default_long, default_lat, zoom = 12)
+      setView(default_long, default_lat, default_zoom) %>%
+      addResetMapButton() # Add reset button
     m
   }
   
@@ -306,7 +312,7 @@ server <- function(input, output, session) {
         scale_x_discrete(limits = rev) +
         scale_y_continuous(breaks = scales::pretty_breaks(n = 10), labels = comma) +
         labs(x = "Stations",
-             y = "Increase and Decrease in Entries") +
+             y = "Decrease and Increase in Entries") +
         ggtitle(paste("Stations in order of lowest to highest riders")) +
         theme(legend.position = "none") + 
         coord_flip() +
@@ -319,7 +325,7 @@ server <- function(input, output, session) {
         scale_x_discrete(limits = rev) +
         scale_y_continuous(breaks = scales::pretty_breaks(n = 10), labels = comma) +
         labs(x = "Stations",
-             y = "Increase and Decrease in Entries") +
+             y = "Decrease and Increase in Entries") +
         ggtitle(paste("Stations in order of highest to lowest riders")) +
         theme(legend.position = "none") + 
         coord_flip() +
@@ -596,6 +602,10 @@ server <- function(input, output, session) {
     if (is.null(click))
       return()
     updateSelectInput(session, 'stations', selected = click$id)
+  })
+  
+  observeEvent(input$reset_map_btn, {
+    leafletProxy("mainMap") %>% setView(default_long, default_lat, default_zoom)
   })
 }
 
