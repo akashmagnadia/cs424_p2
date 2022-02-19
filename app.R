@@ -45,7 +45,7 @@ library(sf)
 #   df$monthChar[df$month == 10] <- "Oct"
 #   df$monthChar[df$month == 11] <- "Nov"
 #   df$monthChar[df$month == 12] <- "Dec"
-# 
+#   
 #   df
 # }
 # 
@@ -63,7 +63,7 @@ library(sf)
 #   df$day[df$dayChar == "Friday"] <- 5
 #   df$day[df$dayChar == "Saturday"] <- 6
 #   df$day[df$dayChar == "Sunday"] <- 7
-# 
+#   
 #   df
 # }
 # entriesData <- add_dayCharToDay(entriesData)
@@ -75,6 +75,12 @@ library(sf)
 # all_data_df <- data.frame(entriesData)
 # 
 # all_data_df$stationname[all_data_df$stationname == "OHare Airport"] <- "O'Hare"
+# 
+# station_names <- unique(all_data_df[c("stationname")])
+# station_names <- station_names[order(station_names$stationname), ]
+# 
+# # only keep stations that I have information about ridership data
+# locData <- subset(locData, locData$STATION_NAME %in% station_names)
 # 
 # # transfer data from location file to main data frame
 # all_data_df$long <- locData$long[match(all_data_df$stationname, locData$STATION_NAME)]
@@ -306,41 +312,42 @@ server <- function(input, output, session) {
     
     if (input$bar_chart_type == "Alphabetical") {
       toReturn <- ggplot(data = df, aes(x = station_names, y = rides)) + 
-        geom_bar(stat = 'identity', aes(fill = toHighlight)) +
-        scale_x_discrete(limits = rev) +
-        scale_y_continuous(breaks = scales::pretty_breaks(n = 10), labels = comma) +
         labs(x = "Stations",
              y = "Entries") +
-        ggtitle(paste("Stations in alphabetical order")) +
-        theme(legend.position = "none") + 
-        coord_flip() +
-        scale_fill_manual( values = c( "Yes" = "tomato", "No" = "gray" ), guide = FALSE )
+        ggtitle(paste("Stations in alphabetical order"))
     }
     
     if (input$bar_chart_type == "Minimum") {
       toReturn <- ggplot(data = df, aes(x = reorder(station_names, rides), y = rides)) + 
-        geom_bar(stat = 'identity', aes(fill = toHighlight)) +
-        scale_x_discrete(limits = rev) +
-        scale_y_continuous(breaks = scales::pretty_breaks(n = 10), labels = comma) +
         labs(x = "Stations",
              y = "Decrease and Increase in Entries") +
-        ggtitle(paste("Stations in order of lowest to highest riders")) +
-        theme(legend.position = "none") + 
-        coord_flip() +
-        scale_fill_manual( values = c( "Yes" = "tomato", "No" = "gray" ), guide = FALSE )
+        ggtitle(paste("Stations in order of lowest to highest riders"))
     }
     
     if (input$bar_chart_type == "Maximum") {
       toReturn <- ggplot(data = df, aes(x = reorder(station_names, -rides), y = rides)) + 
-        geom_bar(stat = 'identity', aes(fill = toHighlight)) +
-        scale_x_discrete(limits = rev) +
-        scale_y_continuous(breaks = scales::pretty_breaks(n = 10), labels = comma) +
         labs(x = "Stations",
              y = "Decrease and Increase in Entries") +
-        ggtitle(paste("Stations in order of highest to lowest riders")) +
-        theme(legend.position = "none") + 
-        coord_flip() +
+        ggtitle(paste("Stations in order of highest to lowest riders"))
+    }
+    
+    toReturn <- toReturn + 
+      scale_x_discrete(limits = rev) +
+      scale_y_continuous(breaks = scales::pretty_breaks(n = 10), labels = comma) +
+      coord_flip() +
+      theme_dark()
+    
+    if (input$single_date_check) {
+      toReturn <- toReturn +
+        geom_bar(stat = 'identity', aes(fill = toHighlight)) +
         scale_fill_manual( values = c( "Yes" = "tomato", "No" = "gray" ), guide = FALSE )
+    } else {
+      toReturn <- toReturn + 
+        geom_bar(stat = 'identity', aes(fill = rides)) +
+        scale_fill_gradient2(low = "#fc8d59", 
+                             high = "#91cf60", 
+                             midpoint = median(0)) +
+        theme(legend.position = "none")
     }
     
     toReturn
@@ -424,7 +431,12 @@ server <- function(input, output, session) {
       )
       )
       
-      rides <- array(unlist(Map('-', end, start)))
+      if (input$range_start_date_input > input$range_end_date_input) {
+        rides <- array(unlist(Map('-', start, end)))
+      } else {
+        rides <- array(unlist(Map('-', end, start)))
+      }
+      
     }
     
     # create a data frame with station names and sum of rides for the stations
@@ -549,6 +561,10 @@ server <- function(input, output, session) {
   #################################################################
   
   observeEvent(input$single_date_check, {
+    if (input$single_date_check == FALSE & input$range_date_check == FALSE) {
+      updateCheckboxInput(session, "range_date_check", value = TRUE)
+    }
+    
     if (input$single_date_check) {
       updateCheckboxInput(session, "range_date_check", value = FALSE)
       shinyjs::enable("single_date_input")
@@ -558,6 +574,10 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$range_date_check, {
+    if (input$single_date_check == FALSE & input$range_date_check == FALSE) {
+      updateCheckboxInput(session, "single_date_check", value = TRUE)
+    }
+    
     if (input$range_date_check) {
       updateCheckboxInput(session, "single_date_check", value = FALSE)
       shinyjs::disable("single_date_input")
