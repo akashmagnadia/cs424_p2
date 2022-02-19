@@ -195,20 +195,22 @@ ui <- dashboardPage(
                               choices = station_names,
                               selected = "UIC-Halsted"
                   ),
+                  selectInput("map_layer_type",
+                              "Map Layer",
+                              choices = c("Default", "Light", "Dark"),
+                              selected = c("Default")),
                   actionButton("prev_day_btn",
                                label = "Previous Day"
                   ),
                   actionButton("next_day_btn",
                                label = "Next Day"
                   ),
-                  actionButton("reset_map_btn",
-                               label = "Reset Button"
-                  ),
                   width = 1
                 ),
                 mainPanel(
                   tags$style(type = "text/css", "#mainMap {height: calc(100vh - 80px) !important;}"),
                   tags$style(type = "text/css", "#mainBarGraph {height: calc(70vh - 80px) !important;}"),
+                  tags$style(HTML(' .leaflet-top { top: 50%; } ')),
                   fluidRow(
                     column(6,
                            leafletOutput("mainMap")),
@@ -265,7 +267,16 @@ server <- function(input, output, session) {
     m <- leaflet(options = leafletOptions(preferCanvas = T)) %>%
       addTiles() %>%  # Add default OpenStreetMap map tiles
       setView(default_long, default_lat, default_zoom) %>%
-      addResetMapButton() # Add reset button
+      addResetMapButton() %>% # Add reset button
+      addProviderTiles(providers$Stamen.TonerLite, group = "Light") %>%
+      addProviderTiles(providers$CartoDB.DarkMatter, group = "Dark", options = providerTileOptions(
+        updateWhenZooming = F,      
+        updateWhenIdle = T           
+      )) %>%
+      addLayersControl(
+        baseGroups = c("Default", "Light", "Dark"),
+        options = layersControlOptions(collapsed = FALSE)
+      )
     m
   }
   
@@ -602,10 +613,6 @@ server <- function(input, output, session) {
     if (is.null(click))
       return()
     updateSelectInput(session, 'stations', selected = click$id)
-  })
-  
-  observeEvent(input$reset_map_btn, {
-    leafletProxy("mainMap") %>% setView(default_long, default_lat, default_zoom)
   })
 }
 
