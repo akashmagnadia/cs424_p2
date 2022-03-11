@@ -122,7 +122,7 @@ every_nth = function(n) {
 # position to view all CTA stations on map
 default_long <- -87.658753
 default_lat <- 41.866568
-default_zoom <- 10
+default_zoom <- 11
 
 # Create the shiny application
 ui <- dashboardPage(
@@ -208,8 +208,8 @@ ui <- dashboardPage(
                 mainPanel(
                   tags$style(type = "text/css", "#mainMap {height: calc(45vh) !important;}"),
                   tags$style(type = "text/css", "#mainBarGraph {height: calc(85vh) !important;}"),
-                  # tags$style(HTML(' .leaflet-top { top: 50%; } ')),
-                  # tags$style(HTML('.btn-primary, .btn-primary:hover, .btn-primary:active, .btn-primary:visited {background-color: #8064A2 !important;}')),
+                  tags$style(HTML(' .leaflet-top { top: 50%; } ')),
+                  tags$style(HTML('.btn-primary, .btn-primary:hover, .btn-primary:active, .btn-primary:visited {background-color: #8064A2 !important;}')),
                   
                   fluidRow(
                     column(7,
