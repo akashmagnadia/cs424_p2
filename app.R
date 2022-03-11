@@ -51,55 +51,22 @@ Yellow_df <- subset(all_data_df, all_data_df$YellowLine == "true")
 Pink_df <- subset(all_data_df, all_data_df$PinkLine == "true")
 Orange_df <- subset(all_data_df, all_data_df$OrangeLine == "true")
 
+unique_all_data_df <- all_data_df[!duplicated(all_data_df[,c('stationname')]),]
+unique_all_data_df <- unique_all_data_df[order(unique_all_data_df$stationname), ]
+
 station_names <- unique(all_data_df[c("stationname")])
 station_names <- station_names[order(station_names$stationname), ]
 
-# merge location data information of different lines
-for (i in 1:nrow(locData)) {
-  for (j in 1:nrow(locData)) {
-    if (locData[i,4] == locData[j,4]) {
-      
-      # Red Line
-      if (locData[i,8] == "true") {
-        locData[j,8] = "true"
-      }
-      
-      # Blue Line
-      if (locData[i,9] == "true") {
-        locData[j,9] = "true"
-      }
-      
-      # Green Line
-      if (locData[i,10] == "true") {
-        locData[j,10] = "true"
-      }
-      
-      # Brown Line
-      if (locData[i,11] == "true") {
-        locData[j,11] = "true"
-      }
-      
-      # Purple Line
-      if (locData[i,13] == "true") {
-        locData[j,13] = "true"
-      }
-      
-      # Yellow Line
-      if (locData[i,14] == "true") {
-        locData[j,14] = "true"
-      }
-      
-      # Pink Line
-      if (locData[i,15] == "true") {
-        locData[j,15] = "true"
-      }
-      
-      # Orange Line
-      if (locData[i,16] == "true") {
-        locData[j,16] = "true"
-      }
+getMapID <- function(station) {
+  toReturn <- 0
+  for (i in 1:nrow(unique_all_data_df)) {
+    if (unique_all_data_df[i,2] == station) {
+      toReturn <- unique_all_data_df[i,1]
+      break
     }
   }
+  
+  toReturn
 }
 
 # create data frame for a particular station
@@ -352,64 +319,15 @@ server <- function(input, output, session) {
     # join ridership data of selected date range with location data
     df = sum_of_station_df_react_date()
     
-    # locData$Entries[df$station_names == locData$STATION_NAME] <- df$rides
-    dataToUse <- merge(locData, df, by.x = "STATION_NAME", 
-                       by.y = "station_names", all.x = TRUE, all.y = FALSE)
+    df['popUp'] <- "No ridernship data"
     
-    dataToUse['popUp'] <- "No ridernship data"
-    print("Merged")
-    print(dataToUse)
+    dataToUse <- df
     
-    for (i in 1:nrow(dataToUse))
+    for (i in 1:nrow(df))
       {
-      # 21 is the index where popUp is
-        dataToUse[i,21] <- paste0("Station Name: ", dataToUse[i,1], "<br>", "Entries: ", dataToUse[i,20], "<br>", "Line: ")
-        
-        if (dataToUse[i,8] == "true") {
-          # Red Line
-          dataToUse[i,21] <- paste0(dataToUse[i,21], "Red | ")
-        }
-        
-        if (dataToUse[i,9] == "true") {
-          # Blue Line
-          dataToUse[i,21] <- paste0(dataToUse[i,21], "Blue | ")
-        }
-        
-        if (dataToUse[i,10] == "true") {
-          # Green Line
-          dataToUse[i,21] <- paste0(dataToUse[i,21], "Green | ")
-        }
-        
-        if (dataToUse[i,11] == "true") {
-          # Brown Line
-          dataToUse[i,21] <- paste0(dataToUse[i,21], "Brown | ")
-        }
-        
-        if (dataToUse[i,13] == "true") {
-          # Purple Line
-          dataToUse[i,21] <- paste0(dataToUse[i,21], "Purple | ")
-        }
-        
-        if (dataToUse[i,14] == "true") {
-          # Yellow Line
-          dataToUse[i,21] <- paste0(dataToUse[i,21], "Yellow | ")
-        }
-        
-        if (dataToUse[i,15] == "true") {
-          # Pink Line
-          dataToUse[i,21] <- paste0(dataToUse[i,21], "Pink | ")
-        }
-        
-        if (dataToUse[i,16] == "true") {
-          # Orange Line
-          dataToUse[i,21] <- paste0(dataToUse[i,21], "Orange | ")
-        }
-        
-        print(dataToUse[i,21])
+      # 16 is the index where popUp is
+        dataToUse[i,16] <- paste0("Station Name: ", dataToUse[i,2], "<br>", "Entries: ", dataToUse[i,4])
       }
-    
-    print("Before M")
-    print(dataToUse)
     
     m <- m %>% addCircleMarkers(data = dataToUse, ~long, ~lat,
                                 popup = dataToUse$popUp,
@@ -419,7 +337,7 @@ server <- function(input, output, session) {
                                 fillColor = "#70FFF8",
                                 stroke = T,
                                 fillOpacity = 0.50,
-                                layerId = dataToUse$STATION_NAME)
+                                layerId = dataToUse$stationname)
     
     m
   }
@@ -444,8 +362,6 @@ server <- function(input, output, session) {
     if (input$bar_chart_type == "Descending") {
       toReturn <- ggplot(data = df, aes(x = reorder(station_names, -rides), y = rides))
     }
-    
-    #print(head(df))
     
     toReturn <- toReturn +
       scale_x_discrete(limits = rev) +
@@ -509,22 +425,19 @@ server <- function(input, output, session) {
     # format the table layout
     
     toReturn <- sum_of_station_df_react_date()
-    # print(toReturn)
-    
+
     # rename
-    names(toReturn)[1] <- "Station"
-    names(toReturn)[2] <- "Entries"
+    names(toReturn)[2] <- "Station"
+    names(toReturn)[4] <- "Entries"
     
     colToKeep <- c("Station", "Entries")
     toReturn <- toReturn[colToKeep]
-    
-    #print(head(toReturn))
     
     if (input$bar_chart_type == "Ascending") {
       toReturn <- toReturn[order(toReturn$Entries),]
     }
     else if (input$bar_chart_type == "Descending") {
-      toReturn <- toReturn[order(-toReturn$Entries),]
+      toReturn <- toReturn[order(rev(toReturn$Entries)),]
     }
     
     # add comma - turns into char
@@ -567,11 +480,11 @@ server <- function(input, output, session) {
   # create sum of rides for a station
   
   sum_of_station_df_react_date_station <- reactive({
-    rides <- NULL
+    entries <- NULL
     
     if (input$single_date_check) {
-      rides <- array(unlist(
-        lapply(station_names,
+      entries <- array(unlist(
+        lapply(unique_all_data_df$stationname,
                sum_of_station_single_date)
       )
       )
@@ -579,7 +492,7 @@ server <- function(input, output, session) {
     
     if (input$range_date_check) {
       start <- array(unlist(
-        lapply(station_names,
+        lapply(unique_all_data_df$stationname,
                sum_of_station_start_date)
       )
       )
@@ -591,30 +504,31 @@ server <- function(input, output, session) {
       )
       
       if (input$range_start_date_input > input$range_end_date_input) {
-        rides <- array(unlist(Map('-', start, end)))
+        entries <- array(unlist(Map('-', start, end)))
       } else {
-        rides <- array(unlist(Map('-', end, start)))
+        entries <- array(unlist(Map('-', end, start)))
       }
       
     }
     
     # create a data frame with station names and sum of rides for the stations
-    toReturn <- data.frame(station_names, rides)
+    toReturn <- unique_all_data_df
+    toReturn$rides <- entries
     
     # add a column to state whether to highlight or not
     toReturn <- toReturn %>% rowwise() %>%
-      mutate(toHighlight = if_else(station_names == input$stations, "Yes", "No"))
+      mutate(toHighlight = if_else(stationname == input$stations, "Yes", "No"))
     
     
     toReturn
   })
   
   sum_of_station_df_react_date <- reactive({
-    rides <- NULL
+    entries <- NULL
     
     if (input$single_date_check) {
-      rides <- array(unlist(
-        lapply(station_names,
+      entries <- array(unlist(
+        lapply(unique_all_data_df$stationname,
                sum_of_station_single_date)
       )
       )
@@ -622,29 +536,27 @@ server <- function(input, output, session) {
     
     if (input$range_date_check) {
       start <- array(unlist(
-        lapply(station_names,
+        lapply(unique_all_data_df$stationname,
                sum_of_station_start_date)
       )
       )
       
       end <- array(unlist(
-        lapply(station_names,
+        lapply(unique_all_data_df$stationname,
                sum_of_station_end_date)
       )
       )
       
       if (input$range_start_date_input > input$range_end_date_input) {
-        rides <- array(unlist(Map('-', start, end)))
+        entries <- array(unlist(Map('-', start, end)))
       } else {
-        rides <- array(unlist(Map('-', end, start)))
+        entries <- array(unlist(Map('-', end, start)))
       }
       
     }
     
-    # create a data frame with station names and sum of rides for the stations
-    toReturn <- data.frame(station_names, rides)
-    
-    toReturn
+    unique_all_data_df$rides <- entries
+    unique_all_data_df
   })
   
   sum_of_station_single_date <- function(station) {
@@ -742,7 +654,6 @@ server <- function(input, output, session) {
     click <- input$mainMap_marker_click
     if (is.null(click))
       return()
-    # print("here")
     
     ### Here get stationname from all_data_df from id, then update with that
     
@@ -759,10 +670,6 @@ server <- function(input, output, session) {
     click2 <- input$mainMap2_marker_click
     if (is.null(click2))
       return()
-    #print("here")
-    #print(click2$id)
-    #z <- get_station_df(click2$id)
-    #print(head(z))
     
     ### Here get stationname from id, then update with that
     
@@ -771,9 +678,7 @@ server <- function(input, output, session) {
   
   temp_halsted <- get_station_df('UIC-Halsted')
   temp_halsted <- do.call(rbind.data.frame, temp_halsted)
-  # print(head(temp_halsted))
-  # print(class(temp_halsted))
-  # print(temp_halsted)
+
   halsted_by_year <- temp_halsted %>%
     mutate(year = format(newDate, "%Y")) %>%
     group_by(year) %>%
@@ -796,8 +701,6 @@ server <- function(input, output, session) {
       temp <- do.call(rbind.data.frame, temp)
       selection$data2 <- temp
       
-      #print(head(selection$data2))
-      
       shinyjs::hide("RedLine")
       shinyjs::hide("BlueLine")
       shinyjs::hide("GreenLine")
@@ -808,7 +711,7 @@ server <- function(input, output, session) {
       shinyjs::hide("OrangeLine")
       
       for (i in 1:nrow(locData)) {
-        if (locData[i,4] == input$Station) {
+        if (locData[i,6] == getMapID(input$Station)) {
           if (locData[i,8] == "true") {
             updateActionButton(session, "RedLine")
             shinyjs::show("RedLine")
@@ -850,49 +753,6 @@ server <- function(input, output, session) {
           }
         }
       }
-      # 
-      # if (temp[1,]$RedLine == "true") {
-      #   #b42c2c
-      #   updateActionButton(session, "RedLine")
-      #   shinyjs::show("RedLine")
-      #   
-      # }
-      # if (temp[1,]$OrangeLine == "true") {
-      #   #dd4b26
-      #   updateActionButton(session, "OrangeLine")
-      #   shinyjs::show("OrangeLine")
-      # }
-      # if (temp[1,]$GreenLine == "true") {
-      #   #359140
-      #   updateActionButton(session, "GreenLine")
-      #   shinyjs::show("GreenLine")
-      # }
-      # if (temp[1,]$YellowLine == "true") {
-      #   #f0e21b
-      #   updateActionButton(session, "YellowLine")
-      #   shinyjs::show("YellowLine")
-      # }
-      # if (temp[1,]$BlueLine == "true") {
-      #   #3c95d6
-      #   updateActionButton(session, "BlueLine")
-      #   shinyjs::show("BlueLine")
-      # }
-      # if (temp[1,]$BrownLine == "true") {
-      #   #4d2c15
-      #   updateActionButton(session, "BrownLine")
-      #   shinyjs::show("BrownLine")
-      # }
-      # if (temp[1,]$PurpleLine == "true") {
-      #   #482887
-      #   updateActionButton(session, "PurpleLine")
-      #   shinyjs::show("PurpleLine")
-      # }
-      # if (temp[1,]$PinkLine == "true") {
-      #   #d57a9e
-      #   updateActionButton(session, "PinkLine")
-      #   shinyjs::show("PinkLine")
-      # }
-      # actionButton("btn1", label = "Blue Line", style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
       
       selection$data1 <- temp %>%
         mutate(year = format(newDate, "%Y")) %>%
@@ -943,8 +803,7 @@ server <- function(input, output, session) {
       if (selection$chart == 'Daily') {
         
         datebreaks <- seq(as.Date(min(selection$data2$newDate)), as.Date(max(selection$data2$newDate)), by = "2 month")
-        #print(max(selection$data2$date))
-        
+
         output$Station_Bar <- renderPlot({
           ggplot(selection$data2, aes(newDate, rides)) +
             geom_col(width = 0.7, fill = selection$color) +
@@ -1020,7 +879,6 @@ server <- function(input, output, session) {
           
           
           toReturn <- date_data[c(5,4)]
-          #print(head(toReturn))
           # rename
           names(toReturn)[1] <- "Date"
           names(toReturn)[2] <- "Entries"
