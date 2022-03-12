@@ -383,23 +383,37 @@ server <- function(input, output, session) {
     df['popUp'] <- "No ridernship data" # index 16
     df['colorToUse'] <- "#fff" # index 17
     df['radius'] <- "#fff" # index 18
+    df['fillOpacity'] <- "1" # index 19
     
     dataToUse <- df
     
+    # find max entries for weighted graph
+    maxEntries <- 0
+    
+    for (i in 1:nrow(df)) {
+      if (dataToUse[i,4] > maxEntries) {
+        maxEntries <- dataToUse[i,4]
+      }
+    }
+    
     for (i in 1:nrow(df))
       {
-      # 16 is the index where popUp is
+        # weighted opticity level based on maximum entries
+        dataToUse[i,19] <- dataToUse[i,4]/maxEntries
+      
+        # 16 is the index where popUp is
         dataToUse[i,16] <- paste0("Station Name: ", dataToUse[i,2], "<br>", "Entries: ", dataToUse[i,4])
         
         linesOnStation <- 0
+        designatedRadius <- 8
         
         if (dataToUse[i,8] == "true") {
           # red line
           
           if (input$linesOnMap == "All Lines" || input$linesOnMap == "Red Line") {
-            dataToUse[i,18] = 10 # radius
+            dataToUse[i,18] = designatedRadius # radius
           } else {
-            if (dataToUse[i,18] != 10) {
+            if (dataToUse[i,18] != designatedRadius) {
               dataToUse[i,18] = 0 # radius
             }
           }
@@ -414,9 +428,9 @@ server <- function(input, output, session) {
           # blue line
           
           if (input$linesOnMap == "All Lines" || input$linesOnMap == "Blue Line") {
-            dataToUse[i,18] = 10 # radius
+            dataToUse[i,18] = designatedRadius # radius
           } else {
-            if (dataToUse[i,18] != 10) {
+            if (dataToUse[i,18] != designatedRadius) {
               dataToUse[i,18] = 0 # radius
             }
           }
@@ -431,9 +445,9 @@ server <- function(input, output, session) {
           # green line
           
           if (input$linesOnMap == "All Lines" || input$linesOnMap == "Green Line") {
-            dataToUse[i,18] = 10 # radius
+            dataToUse[i,18] = designatedRadius # radius
           } else {
-            if (dataToUse[i,18] != 10) {
+            if (dataToUse[i,18] != designatedRadius) {
               dataToUse[i,18] = 0 # radius
             }
           }
@@ -448,9 +462,9 @@ server <- function(input, output, session) {
           # brown line
           
           if (input$linesOnMap == "All Lines" || input$linesOnMap == "Brown Line") {
-            dataToUse[i,18] = 10 # radius
+            dataToUse[i,18] = designatedRadius # radius
           } else {
-            if (dataToUse[i,18] != 10) {
+            if (dataToUse[i,18] != designatedRadius) {
               dataToUse[i,18] = 0 # radius
             }
           }
@@ -465,9 +479,9 @@ server <- function(input, output, session) {
           # purple line
           
           if (input$linesOnMap == "All Lines" || input$linesOnMap == "Purple Line") {
-            dataToUse[i,18] = 10 # radius
+            dataToUse[i,18] = designatedRadius # radius
           } else {
-            if (dataToUse[i,18] != 10) {
+            if (dataToUse[i,18] != designatedRadius) {
               dataToUse[i,18] = 0 # radius
             }
           }
@@ -482,9 +496,9 @@ server <- function(input, output, session) {
           # yellow line
           
           if (input$linesOnMap == "All Lines" || input$linesOnMap == "Yellow Line") {
-            dataToUse[i,18] = 10 # radius
+            dataToUse[i,18] = designatedRadius # radius
           } else {
-            if (dataToUse[i,18] != 10) {
+            if (dataToUse[i,18] != designatedRadius) {
               dataToUse[i,18] = 0 # radius
             }
           }
@@ -499,9 +513,9 @@ server <- function(input, output, session) {
           # pink line
           
           if (input$linesOnMap == "All Lines" || input$linesOnMap == "Pink Line") {
-            dataToUse[i,18] = 10 # radius
+            dataToUse[i,18] = designatedRadius # radius
           } else {
-            if (dataToUse[i,18] != 10) {
+            if (dataToUse[i,18] != designatedRadius) {
               dataToUse[i,18] = 0 # radius
             }
           }
@@ -516,9 +530,9 @@ server <- function(input, output, session) {
           # orange line
           
           if (input$linesOnMap == "All Lines" || input$linesOnMap == "Orange Line") {
-            dataToUse[i,18] = 10 # radius
+            dataToUse[i,18] = designatedRadius # radius
           } else {
-            if (dataToUse[i,18] != 10) {
+            if (dataToUse[i,18] != designatedRadius) {
               dataToUse[i,18] = 0 # radius
             }
           }
@@ -536,17 +550,22 @@ server <- function(input, output, session) {
     
     m <- m %>% addCircleMarkers(data = dataToUse, ~long, ~lat,
                                 popup = dataToUse$popUp,
-                                weight = 3,
+                                weight = 0,
                                 radius = dataToUse$radius,
                                 color = "black",
                                 fillColor = dataToUse$colorToUse,
                                 stroke = T,
-                                fillOpacity = 0.50,
+                                fillOpacity = dataToUse$fillOpacity,
                                 layerId = dataToUse$stationname)
     
     m
   }) %>%
-    bindEvent(input$linesOnMap)
+    bindEvent(input$linesOnMap, 
+              input$single_date_check, 
+              input$single_date_input,
+              input$range_date_check,
+              input$range_start_date_input,
+              input$range_end_date_input)
   
   #################################################################
   
@@ -1171,6 +1190,7 @@ server <- function(input, output, session) {
          Intended for visualizing the trends and interesting patterns in Chicago 'L' Station ridership data over the years (2001-2021)."   
   })
   
+  # link up the two button on different tabs
   observeEvent(input$linesOnMap, {
     updateSelectInput(session, 'linesOnMap2', selected = input$linesOnMap)
   })
