@@ -1,95 +1,143 @@
-#libraries to include
-
-library(shiny)
-library(shinyBS)
-library(shinyWidgets)
-library(shinyjs)
-library(shinydashboard)
-library(ggplot2)
-library(lubridate)
-library(scales)
-library(DT)
-library(tidyr)
-library(tidyverse)
-library(leaflet)
-library(leaflet.extras)
-library(sf)
-
-# assume all of the tsv files in this directory are data of the same kind that I want to visualize
-entriesData <- do.call(rbind, lapply(list.files(pattern = "*Totals.tsv"), read.delim))
-locData <- do.call(rbind, lapply(list.files(pattern = "*Stops.tsv"), read.delim))
-locData <- data.frame(locData)
-
-entriesData$newDate <- as.Date(entriesData$date, "%m/%d/%Y")
-entriesData$date <- NULL
-entriesData$stationname[entriesData$stationname == "Skokie"] <- "Dempster-Skokie"
-
-all_data_df <- entriesData
-
-# transfer data from location file to main data frame
-all_data_df$long <- locData$long[match(all_data_df$station_id, locData$MAP_ID)]
-all_data_df$lat <- locData$lat[match(all_data_df$station_id, locData$MAP_ID)]
-
-# getting rid of the stations with no location info
-all_data_df <- subset(all_data_df, !is.na(long))
-
-all_data_df$RedLine <- locData$RED[match(all_data_df$station_id, locData$MAP_ID)]
-all_data_df$BlueLine <- locData$BLUE[match(all_data_df$station_id, locData$MAP_ID)]
-all_data_df$GreenLine <- locData$G[match(all_data_df$station_id, locData$MAP_ID)]
-all_data_df$BrownLine <- locData$BRN[match(all_data_df$station_id, locData$MAP_ID)]
-all_data_df$PurpleLine <- locData$Pexp[match(all_data_df$station_id, locData$MAP_ID)]
-all_data_df$YellowLine <- locData$Y[match(all_data_df$station_id, locData$MAP_ID)]
-all_data_df$PinkLine <- locData$Pnk[match(all_data_df$station_id, locData$MAP_ID)]
-all_data_df$OrangeLine <- locData$O[match(all_data_df$station_id, locData$MAP_ID)]
-
-Red_df <- subset(all_data_df, all_data_df$RedLine == "true")
-Blue_df <- subset(all_data_df, all_data_df$BlueLine == "true")
-Green_df <- subset(all_data_df, all_data_df$GreenLine == "true")
-Brown_df <- subset(all_data_df, all_data_df$BrownLine == "true")
-Purple_df <- subset(all_data_df, all_data_df$PurpleLine == "true")
-Yellow_df <- subset(all_data_df, all_data_df$YellowLine == "true")
-Pink_df <- subset(all_data_df, all_data_df$PinkLine == "true")
-Orange_df <- subset(all_data_df, all_data_df$OrangeLine == "true")
-
-unique_all_data_df <- all_data_df[!duplicated(all_data_df[,c('stationname')]),]
-unique_all_data_df <- unique_all_data_df[order(unique_all_data_df$stationname), ]
-
-station_names <- unique(all_data_df[c("stationname")])
-station_names <- station_names[order(station_names$stationname), ]
-
-getMapID <- function(station) {
-  toReturn <- 0
-  for (i in 1:nrow(unique_all_data_df)) {
-    if (unique_all_data_df[i,2] == station) {
-      toReturn <- unique_all_data_df[i,1]
-      break
-    }
-  }
-  
-  toReturn
-}
-
-# create data frame for a particular station
-create_station_df <- function(station) {
-  subset(all_data_df, all_data_df$stationname == station)
-}
-
-# get data frame for a particular station
-get_station_df <- function(station) {
-  station_df[[1]][which(station_names == station)]
-}
-
-# create a data frame for each station
-station_df <- list(lapply(station_names, create_station_df))
-
-every_nth = function(n) {
-  return(function(x) {x[c(TRUE, rep(FALSE, n - 1))]})
-}
-
-# position to view all CTA stations on map
-default_long <- -87.658753
-default_lat <- 41.866568
-default_zoom <- 11
+# #libraries to include
+# 
+# library(shiny)
+# library(shinyBS)
+# library(shinyWidgets)
+# library(shinyjs)
+# library(shinydashboard)
+# library(ggplot2)
+# library(lubridate)
+# library(scales)
+# library(DT)
+# library(tidyr)
+# library(tidyverse)
+# library(leaflet)
+# library(leaflet.extras)
+# library(sf)
+# 
+# # assume all of the tsv files in this directory are data of the same kind that I want to visualize
+# entriesData <- do.call(rbind, lapply(list.files(pattern = "*Totals.tsv"), read.delim))
+# locData <- do.call(rbind, lapply(list.files(pattern = "*Stops.tsv"), read.delim))
+# locData <- data.frame(locData)
+# 
+# # merge location data information of different lines
+# for (i in 1:nrow(locData)) {
+#   for (j in 1:nrow(locData)) {
+#     if (locData[i,6] == locData[j,6]) {
+#       
+#       # Red Line
+#       if (locData[i,8] == "true") {
+#         locData[j,8] = "true"
+#       }
+#       
+#       # Blue Line
+#       if (locData[i,9] == "true") {
+#         locData[j,9] = "true"
+#       }
+#       
+#       # Green Line
+#       if (locData[i,10] == "true") {
+#         locData[j,10] = "true"
+#       }
+#       
+#       # Brown Line
+#       if (locData[i,11] == "true") {
+#         locData[j,11] = "true"
+#       }
+#       
+#       # Purple Line
+#       if (locData[i,13] == "true") {
+#         locData[j,13] = "true"
+#       }
+#       
+#       # Yellow Line
+#       if (locData[i,14] == "true") {
+#         locData[j,14] = "true"
+#       }
+#       
+#       # Pink Line
+#       if (locData[i,15] == "true") {
+#         locData[j,15] = "true"
+#       }
+#       
+#       # Orange Line
+#       if (locData[i,16] == "true") {
+#         locData[j,16] = "true"
+#       }
+#     }
+#   }
+# }
+# 
+# entriesData$newDate <- as.Date(entriesData$date, "%m/%d/%Y")
+# entriesData$date <- NULL
+# entriesData$stationname[entriesData$stationname == "Skokie"] <- "Dempster-Skokie"
+# 
+# all_data_df <- entriesData
+# 
+# # transfer data from location file to main data frame
+# all_data_df$long <- locData$long[match(all_data_df$station_id, locData$MAP_ID)]
+# all_data_df$lat <- locData$lat[match(all_data_df$station_id, locData$MAP_ID)]
+# 
+# # getting rid of the stations with no location info
+# all_data_df <- subset(all_data_df, !is.na(long))
+# 
+# all_data_df$RedLine <- locData$RED[match(all_data_df$station_id, locData$MAP_ID)]
+# all_data_df$BlueLine <- locData$BLUE[match(all_data_df$station_id, locData$MAP_ID)]
+# all_data_df$GreenLine <- locData$G[match(all_data_df$station_id, locData$MAP_ID)]
+# all_data_df$BrownLine <- locData$BRN[match(all_data_df$station_id, locData$MAP_ID)]
+# all_data_df$PurpleLine <- locData$Pexp[match(all_data_df$station_id, locData$MAP_ID)]
+# all_data_df$YellowLine <- locData$Y[match(all_data_df$station_id, locData$MAP_ID)]
+# all_data_df$PinkLine <- locData$Pnk[match(all_data_df$station_id, locData$MAP_ID)]
+# all_data_df$OrangeLine <- locData$O[match(all_data_df$station_id, locData$MAP_ID)]
+# 
+# Red_df <- subset(all_data_df, all_data_df$RedLine == "true")
+# Blue_df <- subset(all_data_df, all_data_df$BlueLine == "true")
+# Green_df <- subset(all_data_df, all_data_df$GreenLine == "true")
+# Brown_df <- subset(all_data_df, all_data_df$BrownLine == "true")
+# Purple_df <- subset(all_data_df, all_data_df$PurpleLine == "true")
+# Yellow_df <- subset(all_data_df, all_data_df$YellowLine == "true")
+# Pink_df <- subset(all_data_df, all_data_df$PinkLine == "true")
+# Orange_df <- subset(all_data_df, all_data_df$OrangeLine == "true")
+# 
+# unique_all_data_df <- all_data_df[!duplicated(all_data_df[,c('stationname')]),]
+# unique_all_data_df <- unique_all_data_df[order(unique_all_data_df$stationname), ]
+# 
+# station_names <- unique(all_data_df[c("stationname")])
+# station_names <- station_names[order(station_names$stationname), ]
+# 
+# getMapID <- function(station) {
+#   toReturn <- 0
+#   for (i in 1:nrow(unique_all_data_df)) {
+#     if (unique_all_data_df[i,2] == station) {
+#       toReturn <- unique_all_data_df[i,1]
+#       break
+#     }
+#   }
+#   
+#   toReturn
+# }
+# 
+# # create data frame for a particular station
+# create_station_df <- function(station) {
+#   subset(all_data_df, all_data_df$stationname == station)
+# }
+# 
+# # get data frame for a particular station
+# get_station_df <- function(station) {
+#   station_df[[1]][which(station_names == station)]
+# }
+# 
+# # create a data frame for each station
+# station_df <- list(lapply(station_names, create_station_df))
+# 
+# every_nth = function(n) {
+#   return(function(x) {x[c(TRUE, rep(FALSE, n - 1))]})
+# }
+# 
+# # position to view all CTA stations on map
+# default_long <- -87.658753
+# default_lat <- 41.866568
+# default_zoom <- 11
 
 # Create the shiny application
 ui <- dashboardPage(
@@ -163,6 +211,11 @@ ui <- dashboardPage(
                               label = "Stations",
                               choices = station_names,
                               selected = "UIC-Halsted"
+                  ),
+                  selectInput("linesOnMap",
+                              label = "Lines on Map",
+                              choices = c("All Lines", "Red Line", "Blue Line", "Green Line", "Brown Line", "Purple Line", "Yellow Line", "Pink Line", "Orange Line"),
+                              selected = "All Lines"
                   ),
                   actionButton("prev_day_btn",
                                label = "Previous Day"
@@ -241,11 +294,19 @@ ui <- dashboardPage(
                          
                          fluidRow(
                            style = "padding: 15px;",
-                           column(4,
+                           column(2,
                                   p("Choose a station"),
                                   selectInput("Station", NULL,
                                               choices = station_names, 
                                               selected = "UIC-Halsted"
+                                  )
+                           ),
+                           
+                           column(2,
+                                  p("Lines On Map"),
+                                  selectInput("linesOnMap2", NULL,
+                                              choices = c("All Lines", "Red Line", "Blue Line", "Green Line", "Brown Line", "Purple Line", "Yellow Line", "Pink Line", "Orange Line"),
+                                              selected = "All Lines"
                                   )
                            ),
                            
@@ -313,13 +374,15 @@ server <- function(input, output, session) {
     m
   }
   
-  addCirclesMarkers <- function() {
+  addCirclesMarkers <- reactive({
     m <- getBaseMap()
     
     # join ridership data of selected date range with location data
     df = sum_of_station_df_react_date()
     
-    df['popUp'] <- "No ridernship data"
+    df['popUp'] <- "No ridernship data" # index 16
+    df['colorToUse'] <- "#fff" # index 17
+    df['radius'] <- "#fff" # index 18
     
     dataToUse <- df
     
@@ -327,20 +390,163 @@ server <- function(input, output, session) {
       {
       # 16 is the index where popUp is
         dataToUse[i,16] <- paste0("Station Name: ", dataToUse[i,2], "<br>", "Entries: ", dataToUse[i,4])
+        
+        linesOnStation <- 0
+        
+        if (dataToUse[i,8] == "true") {
+          # red line
+          
+          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Red Line") {
+            dataToUse[i,18] = 10 # radius
+          } else {
+            if (dataToUse[i,18] != 10) {
+              dataToUse[i,18] = 0 # radius
+            }
+          }
+          
+          dataToUse[i,17] <- "#e92f2f"
+          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Red Line")
+          
+          linesOnStation <- linesOnStation + 1
+        }
+        
+        if (dataToUse[i,9] == "true") {
+          # blue line
+          
+          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Blue Line") {
+            dataToUse[i,18] = 10 # radius
+          } else {
+            if (dataToUse[i,18] != 10) {
+              dataToUse[i,18] = 0 # radius
+            }
+          }
+          
+          dataToUse[i,17] <- "#3c95d6"
+          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Blue Line")
+          
+          linesOnStation <- linesOnStation + 1
+        }
+        
+        if (dataToUse[i,10] == "true") {
+          # green line
+          
+          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Green Line") {
+            dataToUse[i,18] = 10 # radius
+          } else {
+            if (dataToUse[i,18] != 10) {
+              dataToUse[i,18] = 0 # radius
+            }
+          }
+          
+          dataToUse[i,17] <- "#359140"
+          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Green Line")
+          
+          linesOnStation <- linesOnStation + 1
+        }
+        
+        if (dataToUse[i,11] == "true") {
+          # brown line
+          
+          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Brown Line") {
+            dataToUse[i,18] = 10 # radius
+          } else {
+            if (dataToUse[i,18] != 10) {
+              dataToUse[i,18] = 0 # radius
+            }
+          }
+          
+          dataToUse[i,17] <- "#964B00"
+          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Brown Line")
+          
+          linesOnStation <- linesOnStation + 1
+        }
+        
+        if (dataToUse[i,12] == "true") {
+          # purple line
+          
+          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Purple Line") {
+            dataToUse[i,18] = 10 # radius
+          } else {
+            if (dataToUse[i,18] != 10) {
+              dataToUse[i,18] = 0 # radius
+            }
+          }
+          
+          dataToUse[i,17] <- "#482887"
+          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Purple Line")
+          
+          linesOnStation <- linesOnStation + 1
+        }
+        
+        if (dataToUse[i,13] == "true") {
+          # yellow line
+          
+          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Yellow Line") {
+            dataToUse[i,18] = 10 # radius
+          } else {
+            if (dataToUse[i,18] != 10) {
+              dataToUse[i,18] = 0 # radius
+            }
+          }
+          
+          dataToUse[i,17] <- "#f0e21b"
+          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Yellow Line")
+          
+          linesOnStation <- linesOnStation + 1
+        }
+        
+        if (dataToUse[i,14] == "true") {
+          # pink line
+          
+          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Pink Line") {
+            dataToUse[i,18] = 10 # radius
+          } else {
+            if (dataToUse[i,18] != 10) {
+              dataToUse[i,18] = 0 # radius
+            }
+          }
+          
+          dataToUse[i,17] <- "#d57a9e"
+          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Pink Line")
+          
+          linesOnStation <- linesOnStation + 1
+        }
+        
+        if (dataToUse[i,15] == "true") {
+          # orange line
+          
+          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Orange Line") {
+            dataToUse[i,18] = 10 # radius
+          } else {
+            if (dataToUse[i,18] != 10) {
+              dataToUse[i,18] = 0 # radius
+            }
+          }
+          
+          dataToUse[i,17] <- "#dd4b26"
+          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Orange Line")
+          
+          linesOnStation <- linesOnStation + 1
+        }
+        
+        if (linesOnStation > 1) {
+          dataToUse[i,17] <- "#676767"
+        }
       }
     
     m <- m %>% addCircleMarkers(data = dataToUse, ~long, ~lat,
                                 popup = dataToUse$popUp,
                                 weight = 3,
-                                radius = 10,
+                                radius = dataToUse$radius,
                                 color = "black",
-                                fillColor = "#70FFF8",
+                                fillColor = dataToUse$colorToUse,
                                 stroke = T,
                                 fillOpacity = 0.50,
                                 layerId = dataToUse$stationname)
     
     m
-  }
+  }) %>%
+    bindEvent(input$linesOnMap)
   
   #################################################################
   
@@ -965,7 +1171,13 @@ server <- function(input, output, session) {
          Intended for visualizing the trends and interesting patterns in Chicago 'L' Station ridership data over the years (2001-2021)."   
   })
   
+  observeEvent(input$linesOnMap, {
+    updateSelectInput(session, 'linesOnMap2', selected = input$linesOnMap)
+  })
   
+  observeEvent(input$linesOnMap2, {
+    updateSelectInput(session, 'linesOnMap', selected = input$linesOnMap2)
+  })
 }
 
 shinyApp(ui = ui, server = server)
