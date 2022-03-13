@@ -110,7 +110,6 @@ getStationName <- function(station) {
   toReturn <- 0
   for (i in 1:nrow(name)) {
     if (name[i,1] == station) {
-      # print(name[i,2])
       toReturn <- name[i,2]
       break
     }
@@ -128,7 +127,6 @@ yellow_s_names <- data.frame(stationname = c())
 pink_s_names <- data.frame(stationname = c())
 
 for (i in 1:nrow(locData)) {
-  # print(getStationName(locData[i,6]))
   if (locData[i,14] == "true"){
     yellow_s_names <- rbind(yellow_s_names,getStationName(locData[i,6]))
   }
@@ -454,6 +452,25 @@ ui <- dashboardPage(
 
 server <- function(input, output, session) {
   
+  observeEvent({
+    input$Station
+  },
+  
+  {
+    temp <- get_station_df(input$Station)
+    temp <- do.call(rbind.data.frame, temp)
+    temp <- temp %>%
+      mutate(year = format(newDate, "%Y")) %>%
+      group_by(year) %>%
+      summarise(rides = sum(rides))
+    
+    val <- max(temp$year)
+    
+    updateSelectInput(session, "Year",
+                      choices = c(min(temp$year):max(temp$year)), 
+                      selected = val
+    )
+  })
   
   getBaseMap <- function() {
     # creating initial map
@@ -1068,11 +1085,6 @@ server <- function(input, output, session) {
       
       selection$color <- "#0099f9"
       
-      updateSelectInput(session, "Year", NULL,
-                        choices = c(min(selection$data1$year):max(selection$data1$year)), 
-                        selected = max(selection$data1$year)
-      )
-      
       if (input$Chart == "Daily") {
         selection$data2 <- selection$data2 %>% filter(year(selection$data2$newDate) == input$Year)
       }
@@ -1109,8 +1121,8 @@ server <- function(input, output, session) {
       ### Daily Bar Chart ###
       if (selection$chart == 'Daily') {
         
-        datebreaks <- seq(as.Date(min(selection$data2$newDate)), as.Date(max(selection$data2$newDate)), by = "2 month")
-        
+        # datebreaks <- seq(as.Date(min(selection$data2$newDate)), as.Date(max(selection$data2$newDate)), by = "2 month")
+
         output$Station_Bar <- renderPlot({
           ggplot(selection$data2, aes(newDate, rides)) +
             geom_col(width = 0.7, fill = selection$color) +
@@ -1118,9 +1130,7 @@ server <- function(input, output, session) {
                  subtitle = sub,
                  x = "Date", 
                  y = "Entries") +
-            scale_x_date(date_labels = "%B",
-                         breaks = datebreaks,
-                         limits = c( as.Date(min(selection$data2$newDate)), as.Date(max(selection$data2$newDate))) ) +
+            scale_x_date(date_labels = "%B" ) +
             scale_y_continuous(labels = scales::comma)
         })
       }
