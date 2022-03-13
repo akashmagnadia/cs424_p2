@@ -381,13 +381,12 @@ server <- function(input, output, session) {
     df = sum_of_station_df()
     df <- data.frame(df) # for some reason it converts to tibble, so I convert it to this
     
-    # drop toHighlight column from the dataframe
-    df <- df[,!(names(df) %in% c("toHighlight"))]
+    print(df)
     
-    df['popUp'] <- "No ridernship data" # index 17
-    df['colorToUse'] <- "#fff" # index 18
-    df['radius'] <- "#fff" # index 19
-    df['fillOpacity'] <- "1" # index 20
+    df['popUp'] <- "No ridernship data" # index 18
+    df['colorToUse'] <- "#fff" # index 19
+    df['radius'] <- "#fff" # index 20
+    df['fillOpacity'] <- "1" # index 21
     
     dataToUse <- df
     
@@ -403,10 +402,10 @@ server <- function(input, output, session) {
     for (i in 1:nrow(df))
     {
       # weighted opacity level based on maximum entries
-      dataToUse[i,20] <- ((dataToUse[i,4]/maxEntries) / 2) + 0.5
+      dataToUse[i,21] <- ((dataToUse[i,4]/maxEntries) / 2) + 0.5
       
-      # 16 is the index where popUp is
-      dataToUse[i,17] <- paste0("Station Name: ", dataToUse[i,2], "<br>", "Entries: ", dataToUse[i,4])
+      # 18 is the index where popUp is
+      dataToUse[i,18] <- paste0("Station Name: ", dataToUse[i,2], "<br>", "Entries: ", dataToUse[i,4])
       
       linesOnStation <- 0
       designatedRadius <- 8
@@ -415,15 +414,15 @@ server <- function(input, output, session) {
         # red line
         
         if (input$linesOnMap == "All Lines" || input$linesOnMap == "Red Line") {
-          dataToUse[i,19] = designatedRadius # radius
+          dataToUse[i,20] = designatedRadius # radius
         } else {
-          if (dataToUse[i,19] != designatedRadius) {
-            dataToUse[i,19] = 0 # radius
+          if (dataToUse[i,20] != designatedRadius) {
+            dataToUse[i,20] = 0 # radius
           }
         }
         
-        dataToUse[i,18] <- "#e92f2f"
-        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Red Line")
+        dataToUse[i,19] <- "#e92f2f"
+        dataToUse[i,18] <- paste0(dataToUse[i,18], "<br>", "Red Line")
         
         linesOnStation <- linesOnStation + 1
       }
@@ -432,15 +431,15 @@ server <- function(input, output, session) {
         # blue line
         
         if (input$linesOnMap == "All Lines" || input$linesOnMap == "Blue Line") {
-          dataToUse[i,19] = designatedRadius # radius
+          dataToUse[i,20] = designatedRadius # radius
         } else {
-          if (dataToUse[i,19] != designatedRadius) {
-            dataToUse[i,19] = 0 # radius
+          if (dataToUse[i,20] != designatedRadius) {
+            dataToUse[i,20] = 0 # radius
           }
         }
         
-        dataToUse[i,18] <- "#3c95d6"
-        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Blue Line")
+        dataToUse[i,19] <- "#3c95d6"
+        dataToUse[i,18] <- paste0(dataToUse[i,18], "<br>", "Blue Line")
         
         linesOnStation <- linesOnStation + 1
       }
@@ -449,15 +448,15 @@ server <- function(input, output, session) {
         # green line
         
         if (input$linesOnMap == "All Lines" || input$linesOnMap == "Green Line") {
-          dataToUse[i,19] = designatedRadius # radius
+          dataToUse[i,20] = designatedRadius # radius
         } else {
-          if (dataToUse[i,19] != designatedRadius) {
-            dataToUse[i,19] = 0 # radius
+          if (dataToUse[i,20] != designatedRadius) {
+            dataToUse[i,20] = 0 # radius
           }
         }
         
-        dataToUse[i,18] <- "#359140"
-        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Green Line")
+        dataToUse[i,19] <- "#359140"
+        dataToUse[i,18] <- paste0(dataToUse[i,18], "<br>", "Green Line")
         
         linesOnStation <- linesOnStation + 1
       }
@@ -466,15 +465,15 @@ server <- function(input, output, session) {
         # brown line
         
         if (input$linesOnMap == "All Lines" || input$linesOnMap == "Brown Line") {
-          dataToUse[i,19] = designatedRadius # radius
+          dataToUse[i,20] = designatedRadius # radius
         } else {
-          if (dataToUse[i,19] != designatedRadius) {
-            dataToUse[i,19] = 0 # radius
+          if (dataToUse[i,20] != designatedRadius) {
+            dataToUse[i,20] = 0 # radius
           }
         }
         
-        dataToUse[i,18] <- "#964B00"
-        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Brown Line")
+        dataToUse[i,19] <- "#964B00"
+        dataToUse[i,18] <- paste0(dataToUse[i,18], "<br>", "Brown Line")
         
         linesOnStation <- linesOnStation + 1
       }
@@ -483,15 +482,15 @@ server <- function(input, output, session) {
         # purple line
         
         if (input$linesOnMap == "All Lines" || input$linesOnMap == "Purple Line") {
-          dataToUse[i,19] = designatedRadius # radius
+          dataToUse[i,20] = designatedRadius # radius
         } else {
-          if (dataToUse[i,19] != designatedRadius) {
-            dataToUse[i,19] = 0 # radius
+          if (dataToUse[i,20] != designatedRadius) {
+            dataToUse[i,20] = 0 # radius
           }
         }
         
-        dataToUse[i,18] <- "#482887"
-        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Purple Line")
+        dataToUse[i,19] <- "#482887"
+        dataToUse[i,18] <- paste0(dataToUse[i,18], "<br>", "Purple Line")
         
         linesOnStation <- linesOnStation + 1
       }
@@ -500,15 +499,15 @@ server <- function(input, output, session) {
         # yellow line
         
         if (input$linesOnMap == "All Lines" || input$linesOnMap == "Yellow Line") {
-          dataToUse[i,19] = designatedRadius # radius
+          dataToUse[i,20] = designatedRadius # radius
         } else {
-          if (dataToUse[i,19] != designatedRadius) {
-            dataToUse[i,19] = 0 # radius
+          if (dataToUse[i,20] != designatedRadius) {
+            dataToUse[i,20] = 0 # radius
           }
         }
         
-        dataToUse[i,18] <- "#f0e21b"
-        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Yellow Line")
+        dataToUse[i,19] <- "#f0e21b"
+        dataToUse[i,18] <- paste0(dataToUse[i,18], "<br>", "Yellow Line")
         
         linesOnStation <- linesOnStation + 1
       }
@@ -517,15 +516,15 @@ server <- function(input, output, session) {
         # pink line
         
         if (input$linesOnMap == "All Lines" || input$linesOnMap == "Pink Line") {
-          dataToUse[i,19] = designatedRadius # radius
+          dataToUse[i,20] = designatedRadius # radius
         } else {
-          if (dataToUse[i,19] != designatedRadius) {
-            dataToUse[i,19] = 0 # radius
+          if (dataToUse[i,20] != designatedRadius) {
+            dataToUse[i,20] = 0 # radius
           }
         }
         
-        dataToUse[i,18] <- "#d57a9e"
-        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Pink Line")
+        dataToUse[i,19] <- "#d57a9e"
+        dataToUse[i,18] <- paste0(dataToUse[i,18], "<br>", "Pink Line")
         
         linesOnStation <- linesOnStation + 1
       }
@@ -534,23 +533,28 @@ server <- function(input, output, session) {
         # orange line
         
         if (input$linesOnMap == "All Lines" || input$linesOnMap == "Orange Line") {
-          dataToUse[i,19] = designatedRadius # radius
+          dataToUse[i,20] = designatedRadius # radius
         } else {
-          if (dataToUse[i,19] != designatedRadius) {
-            dataToUse[i,19] = 0 # radius
+          if (dataToUse[i,20] != designatedRadius) {
+            dataToUse[i,20] = 0 # radius
           }
         }
         
-        dataToUse[i,18] <- "#dd4b26"
-        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Orange Line")
+        dataToUse[i,19] <- "#dd4b26"
+        dataToUse[i,18] <- paste0(dataToUse[i,18], "<br>", "Orange Line")
         
         linesOnStation <- linesOnStation + 1
       }
       
       if (linesOnStation > 1) {
-        dataToUse[i,18] <- "#676767"
+        dataToUse[i,19] <- "#676767"
       }
     }
+    
+    print(df)
+    
+    # to highlight
+    h <- dataToUse %>% filter(toHighlight == "Yes")
     
     m <- m %>% addCircleMarkers(data = dataToUse, ~long, ~lat,
                                 popup = dataToUse$popUp,
@@ -560,7 +564,8 @@ server <- function(input, output, session) {
                                 fillColor = dataToUse$colorToUse,
                                 stroke = T,
                                 fillOpacity = dataToUse$fillOpacity,
-                                layerId = dataToUse$stationname)
+                                layerId = dataToUse$stationname) %>% 
+      addCircleMarkers(lng = h[1,]$long, lat = h[1,]$lat, color = 'blue', weight = 5)
     
     m
   }) %>%
@@ -570,7 +575,8 @@ server <- function(input, output, session) {
               input$range_date_check,
               input$range_start_date_input,
               input$range_end_date_input,
-              input$Year)
+              input$Year,
+              input$stations)
   
   #################################################################
   
