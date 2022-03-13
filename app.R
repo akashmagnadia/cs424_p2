@@ -505,17 +505,30 @@ server <- function(input, output, session) {
     
     # find max entries for weighted graph
     maxEntries <- 0
+    minEntries <- 10000000000
     
     for (i in 1:nrow(df)) {
       if (dataToUse[i,4] > maxEntries) {
         maxEntries <- dataToUse[i,4]
+      }
+      
+      if (dataToUse[i,4] < minEntries) {
+        minEntries <- dataToUse[i,4]
       }
     }
     
     for (i in 1:nrow(df))
     {
       # weighted opacity level based on maximum entries
-      dataToUse[i,21] <- ((dataToUse[i,4]/maxEntries) / 3) + (1/3)
+      dataToUse[i,21] <- dataToUse[i,4]/maxEntries
+      
+      # minimum opacity
+      min_opc <- 0.25
+      # if (dataToUse[i,21] < min_opc) {
+      #   dataToUse[i,21] <- min_opc
+      # }
+      
+      dataToUse[i,21] <- ((1 - min_opc) * as.numeric(dataToUse[i,21])) + min_opc
       
       # 18 is the index where popUp is
       dataToUse[i,18] <- paste0("Station Name: ", dataToUse[i,2], "<br>", "Entries: ", dataToUse[i,4])
@@ -1190,6 +1203,7 @@ server <- function(input, output, session) {
       if (selection$chart == 'Daily') {
         date_data <- selection$data2
         date_data$newDate <- format(date_data$newDate, format = "%m/%d")
+        date_data <- date_data[order(date_data$newDate),]
         
         
         output$Station_Raw <- renderUI({
@@ -1273,7 +1287,7 @@ server <- function(input, output, session) {
   
   output$AboutOut <- renderText({
     "Created by: Akash Magnadia & Kazi Shahrukh Omar\n
-         Created: XX March, 2022\n
+         Created: March 12th, 2022\n
          Data Source:\n
          1. Location data of CTA L Stations: https://data.cityofchicago.org/Transportation/CTA-Ridership-L-Station-Entries-Daily-Totals/5neh-572f\n
          2. Ridership data of CTA L Stations: https://data.cityofchicago.org/Transportation/CTA-Ridership-L-Station-Entries-Daily-Totals/5neh-572f\n
