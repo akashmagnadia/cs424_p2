@@ -20,6 +20,16 @@
 # locData <- do.call(rbind, lapply(list.files(pattern = "*Stops.tsv"), read.delim))
 # locData <- data.frame(locData)
 # 
+# Randolph <- data.frame(NA, NA, NA, NA, NA, 40200, NA, "false", "false", "true", "true", "true", "false", "false", "true", "true", NA, 41.884431,  -87.626149)
+# names(Randolph)<-c("STOP_ID", "DIRECTION_ID", "STOP_NAME", "STATION_NAME", "STATION_DESCRIPTIVE_NAME", "MAP_ID", "ADA", "RED", "BLUE", "G", "BRN", "P", "Pexp", "Y", "Pnk", "O", "Location", "lat", "long")
+# Madison <- data.frame(NA, NA, NA, NA, NA, 40640, NA, "false", "false", "true", "true", "true", "false", "false", "true", "true", NA, 41.882023, -87.626098)
+# names(Madison)<-c("STOP_ID", "DIRECTION_ID", "STOP_NAME", "STATION_NAME", "STATION_DESCRIPTIVE_NAME", "MAP_ID", "ADA", "RED", "BLUE", "G", "BRN", "P", "Pexp", "Y", "Pnk", "O", "Location", "lat", "long")
+# Washington <- data.frame(NA, NA, NA, NA, NA, 40500, NA, "true", "false", "false", "false", "false", "false", "false", "false", "false", NA, 41.8837, -87.6278)
+# names(Washington)<-c("STOP_ID", "DIRECTION_ID", "STOP_NAME", "STATION_NAME", "STATION_DESCRIPTIVE_NAME", "MAP_ID", "ADA", "RED", "BLUE", "G", "BRN", "P", "Pexp", "Y", "Pnk", "O", "Location", "lat", "long")
+# Homan <- data.frame(NA, NA, NA, NA, NA, 41580, NA, "false", "false", "true", "false", "false", "false", "false", "false", "false", NA, 41.884914, -87.711327)
+# names(Homan)<-c("STOP_ID", "DIRECTION_ID", "STOP_NAME", "STATION_NAME", "STATION_DESCRIPTIVE_NAME", "MAP_ID", "ADA", "RED", "BLUE", "G", "BRN", "P", "Pexp", "Y", "Pnk", "O", "Location", "lat", "long")
+# locData <- rbind(locData, Randolph, Madison, Washington, Homan)
+# 
 # # merge location data information of different lines
 # for (i in 1:nrow(locData)) {
 #   for (j in 1:nrow(locData)) {
@@ -551,13 +561,10 @@ server <- function(input, output, session) {
       }
     }
     
-    print(df)
-    
     # to highlight
     h <- dataToUse %>% filter(toHighlight == "Yes")
     
     m <- m %>% addCircleMarkers(data = dataToUse, ~long, ~lat,
-                                popup = dataToUse$popUp,
                                 weight = 1,
                                 radius = dataToUse$radius,
                                 color = "black",
