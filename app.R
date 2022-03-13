@@ -101,6 +101,93 @@
 # all_data_df$PinkLine <- locData$Pnk[match(all_data_df$station_id, locData$MAP_ID)]
 # all_data_df$OrangeLine <- locData$O[match(all_data_df$station_id, locData$MAP_ID)]
 # 
+# 
+# ######
+# 
+# name <- all_data_df[!duplicated(all_data_df[,c('station_id')]),]
+# 
+# getStationName <- function(station) {
+#   toReturn <- 0
+#   for (i in 1:nrow(name)) {
+#     if (name[i,1] == station) {
+#       # print(name[i,2])
+#       toReturn <- name[i,2]
+#       break
+#     }
+#   }
+#   toReturn
+# }
+# 
+# red_s_names <- data.frame(stationname=c())
+# blue_s_names <- data.frame(stationname=c())
+# green_s_names <- data.frame(stationname=c())
+# brown_s_names <- data.frame(stationname=c())
+# orange_s_names <- data.frame(stationname=c())
+# purple_s_names <- data.frame(stationname=c())
+# yellow_s_names <- data.frame(stationname=c())
+# pink_s_names <- data.frame(stationname=c())
+# 
+# for (i in 1:nrow(locData)) {
+#   # print(getStationName(locData[i,6]))
+#   if(locData[i,14] == "true"){
+#     yellow_s_names <- rbind(yellow_s_names,getStationName(locData[i,6]))
+#   }
+#   if (locData[i,8] == "true") {
+#     #Red
+#     red_s_names <- rbind(red_s_names,getStationName(locData[i,6]))
+#   }
+#   
+#   if (locData[i,9] == "true") {
+#     #Blue
+#     blue_s_names <- rbind(blue_s_names,getStationName(locData[i,6]))
+#   }
+#   
+#   if (locData[i,10] == "true") {
+#     #Green
+#     green_s_names <- rbind(green_s_names,getStationName(locData[i,6]))
+#   }
+#   
+#   if (locData[i,11] == "true") {
+#     #Brown
+#     brown_s_names <- rbind(brown_s_names,getStationName(locData[i,6]))
+#   }
+#   
+#   if (locData[i,13] == "true") {
+#     #Purple
+#     purple_s_names <- rbind(purple_s_names,getStationName(locData[i,6]))
+#   }
+#   
+#   if (locData[i,15] == "true") {
+#     #Pink
+#     pink_s_names <- rbind(pink_s_names,getStationName(locData[i,6]))
+#   }
+#   
+#   if (locData[i,16] == "true") {
+#     #Orange
+#     orange_s_names <- rbind(orange_s_names,getStationName(locData[i,6]))
+#   }
+# }
+# 
+# red_s_names <- distinct(red_s_names)
+# colnames(red_s_names) <- "stationname"
+# blue_s_names <- distinct(blue_s_names)
+# colnames(blue_s_names) <- "stationname"
+# green_s_names <- distinct(green_s_names)
+# colnames(green_s_names) <- "stationname"
+# yellow_s_names <- distinct(yellow_s_names)
+# colnames(yellow_s_names) <- "stationname"
+# orange_s_names <- distinct(orange_s_names)
+# colnames(orange_s_names) <- "stationname"
+# brown_s_names <- distinct(brown_s_names)
+# colnames(brown_s_names) <- "stationname"
+# pink_s_names <- distinct(pink_s_names)
+# colnames(pink_s_names) <- "stationname"
+# purple_s_names <- distinct(purple_s_names)
+# colnames(purple_s_names) <- "stationname"
+# 
+# #####
+# 
+# 
 # Red_df <- subset(all_data_df, all_data_df$RedLine == "true")
 # Blue_df <- subset(all_data_df, all_data_df$BlueLine == "true")
 # Green_df <- subset(all_data_df, all_data_df$GreenLine == "true")
@@ -391,8 +478,6 @@ server <- function(input, output, session) {
     df = sum_of_station_df()
     df <- data.frame(df) # for some reason it converts to tibble, so I convert it to this
     
-    print(df)
-    
     df['popUp'] <- "No ridernship data" # index 18
     df['colorToUse'] <- "#fff" # index 19
     df['radius'] <- "#fff" # index 20
@@ -412,7 +497,7 @@ server <- function(input, output, session) {
     for (i in 1:nrow(df))
     {
       # weighted opacity level based on maximum entries
-      dataToUse[i,21] <- ((dataToUse[i,4]/maxEntries) / 2) + 0.5
+      dataToUse[i,21] <- ((dataToUse[i,4]/maxEntries) / 3) + (1/3)
       
       # 18 is the index where popUp is
       dataToUse[i,18] <- paste0("Station Name: ", dataToUse[i,2], "<br>", "Entries: ", dataToUse[i,4])
@@ -1188,11 +1273,106 @@ server <- function(input, output, session) {
   
   # link up the two button on different tabs
   observeEvent(input$linesOnMap, {
+    new_list_of_lines <- data.frame(stationname = c())
+    
+    if (input$linesOnMap == "All Lines") {
+      
+      new_list_of_lines <- station_names
+      updateSelectInput(session, 'stations', choices = new_list_of_lines, selected = "UIC-Halsted")
+      updateSelectInput(session, 'Station', choices = new_list_of_lines, selected = "UIC-Halsted")
+      
+    } else {
+      
+      if (input$linesOnMap == "Red Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,red_s_names)
+      }
+      
+      if (input$linesOnMap == "Blue Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,blue_s_names)
+      }
+      
+      if (input$linesOnMap == "Green Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,green_s_names)
+      }
+      
+      if (input$linesOnMap == "Orange Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,orange_s_names)
+      }
+      
+      if (input$linesOnMap == "Brown Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,brown_s_names)
+      }
+      
+      if (input$linesOnMap == "Purple Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,purple_s_names)
+      }
+      
+      if (input$linesOnMap == "Pink Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,pink_s_names)
+      }
+      
+      if (input$linesOnMap == "Yellow Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,yellow_s_names)
+      }
+      
+      updateSelectInput(session, 'stations', choices = new_list_of_lines)
+      updateSelectInput(session, 'Station', choices = new_list_of_lines)
+    }
+    
     updateSelectInput(session, 'linesOnMap2', selected = input$linesOnMap)
+    
   })
   
   observeEvent(input$linesOnMap2, {
+    
+    new_list_of_lines <- data.frame(stationname = c())
+    
+    if (input$linesOnMap == "All Lines") {
+      
+      new_list_of_lines <- station_names
+      updateSelectInput(session, 'stations', choices = new_list_of_lines, selected = "UIC-Halsted")
+      updateSelectInput(session, 'Station', choices = new_list_of_lines, selected = "UIC-Halsted")
+      
+    } else {
+      
+      if (input$linesOnMap == "Red Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,red_s_names)
+      }
+      
+      if (input$linesOnMap == "Blue Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,blue_s_names)
+      }
+      
+      if (input$linesOnMap == "Green Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,green_s_names)
+      }
+      
+      if (input$linesOnMap == "Orange Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,orange_s_names)
+      }
+      
+      if (input$linesOnMap == "Brown Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,brown_s_names)
+      }
+      
+      if (input$linesOnMap == "Purple Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,purple_s_names)
+      }
+      
+      if (input$linesOnMap == "Pink Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,pink_s_names)
+      }
+      
+      if (input$linesOnMap == "Yellow Line") {
+        new_list_of_lines <- rbind(new_list_of_lines,yellow_s_names)
+      }
+      
+      updateSelectInput(session, 'stations', choices = new_list_of_lines)
+      updateSelectInput(session, 'Station', choices = new_list_of_lines)
+    }
+    
     updateSelectInput(session, 'linesOnMap', selected = input$linesOnMap2)
+    
   })
 }
 
