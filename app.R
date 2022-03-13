@@ -73,6 +73,7 @@
 # entriesData$stationname[entriesData$stationname == "Skokie"] <- "Dempster-Skokie"
 # 
 # all_data_df <- entriesData
+# all_data_df$year <- format(as.Date(entriesData$newDate, format = "%d/%m/%Y"),"%Y")
 # 
 # # transfer data from location file to main data frame
 # all_data_df$long <- locData$long[match(all_data_df$station_id, locData$MAP_ID)]
@@ -159,8 +160,8 @@ ui <- dashboardPage(
                      menuItem("", tabName = "cheapBlankSpace", icon = NULL),
                      menuItem("", tabName = "cheapBlankSpace", icon = NULL),
                      menuItem("", tabName = "cheapBlankSpace", icon = NULL),
-                     menuItem("All Stations", tabName = "viz", selected = T),
-                     menuItem("One Station", tabName = "ovw"),
+                     menuItem("All Stations", tabName = "allStations", selected = T),
+                     menuItem("One Station", tabName = "oneStation"),
                      menuItem("About", tabName = "About")
                    ),
                    shinyjs::useShinyjs()
@@ -168,7 +169,7 @@ ui <- dashboardPage(
   dashboardBody(
     
     tabItems(
-      tabItem(tabName = "viz",
+      tabItem(tabName = "allStations",
               
               sidebarLayout(
                 position = "left",
@@ -252,7 +253,7 @@ ui <- dashboardPage(
                 )
               )
       ),
-      tabItem(tabName = "ovw",
+      tabItem(tabName = "oneStation",
               tags$style(type = "text/css", "#mainMap2 {height: calc(80vh) !important;}"),
               # tags$style(HTML(' .leaflet-top { top: 50%; } ')),
               
@@ -377,13 +378,16 @@ server <- function(input, output, session) {
   addCirclesMarkers <- reactive({
     m <- getBaseMap()
     
-    # join ridership data of selected date range with location data
-    df = sum_of_station_df_react_date()
+    df = sum_of_station_df()
+    df <- data.frame(df) # for some reason it converts to tibble, so I convert it to this
     
-    df['popUp'] <- "No ridernship data" # index 16
-    df['colorToUse'] <- "#fff" # index 17
-    df['radius'] <- "#fff" # index 18
-    df['fillOpacity'] <- "1" # index 19
+    # drop toHighlight column from the dataframe
+    df <- df[,!(names(df) %in% c("toHighlight"))]
+    
+    df['popUp'] <- "No ridernship data" # index 17
+    df['colorToUse'] <- "#fff" # index 18
+    df['radius'] <- "#fff" # index 19
+    df['fillOpacity'] <- "1" # index 20
     
     dataToUse <- df
     
@@ -397,160 +401,160 @@ server <- function(input, output, session) {
     }
     
     for (i in 1:nrow(df))
-      {
-        # weighted opticity level based on maximum entries
-        dataToUse[i,19] <- dataToUse[i,4]/maxEntries
+    {
+      # weighted opacity level based on maximum entries
+      dataToUse[i,20] <- ((dataToUse[i,4]/maxEntries) / 2) + 0.5
       
-        # 16 is the index where popUp is
-        dataToUse[i,16] <- paste0("Station Name: ", dataToUse[i,2], "<br>", "Entries: ", dataToUse[i,4])
+      # 16 is the index where popUp is
+      dataToUse[i,17] <- paste0("Station Name: ", dataToUse[i,2], "<br>", "Entries: ", dataToUse[i,4])
+      
+      linesOnStation <- 0
+      designatedRadius <- 8
+      
+      if (dataToUse[i,9] == "true") {
+        # red line
         
-        linesOnStation <- 0
-        designatedRadius <- 8
-        
-        if (dataToUse[i,8] == "true") {
-          # red line
-          
-          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Red Line") {
-            dataToUse[i,18] = designatedRadius # radius
-          } else {
-            if (dataToUse[i,18] != designatedRadius) {
-              dataToUse[i,18] = 0 # radius
-            }
+        if (input$linesOnMap == "All Lines" || input$linesOnMap == "Red Line") {
+          dataToUse[i,19] = designatedRadius # radius
+        } else {
+          if (dataToUse[i,19] != designatedRadius) {
+            dataToUse[i,19] = 0 # radius
           }
-          
-          dataToUse[i,17] <- "#e92f2f"
-          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Red Line")
-          
-          linesOnStation <- linesOnStation + 1
         }
         
-        if (dataToUse[i,9] == "true") {
-          # blue line
-          
-          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Blue Line") {
-            dataToUse[i,18] = designatedRadius # radius
-          } else {
-            if (dataToUse[i,18] != designatedRadius) {
-              dataToUse[i,18] = 0 # radius
-            }
-          }
-          
-          dataToUse[i,17] <- "#3c95d6"
-          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Blue Line")
-          
-          linesOnStation <- linesOnStation + 1
-        }
+        dataToUse[i,18] <- "#e92f2f"
+        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Red Line")
         
-        if (dataToUse[i,10] == "true") {
-          # green line
-          
-          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Green Line") {
-            dataToUse[i,18] = designatedRadius # radius
-          } else {
-            if (dataToUse[i,18] != designatedRadius) {
-              dataToUse[i,18] = 0 # radius
-            }
-          }
-          
-          dataToUse[i,17] <- "#359140"
-          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Green Line")
-          
-          linesOnStation <- linesOnStation + 1
-        }
-        
-        if (dataToUse[i,11] == "true") {
-          # brown line
-          
-          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Brown Line") {
-            dataToUse[i,18] = designatedRadius # radius
-          } else {
-            if (dataToUse[i,18] != designatedRadius) {
-              dataToUse[i,18] = 0 # radius
-            }
-          }
-          
-          dataToUse[i,17] <- "#964B00"
-          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Brown Line")
-          
-          linesOnStation <- linesOnStation + 1
-        }
-        
-        if (dataToUse[i,12] == "true") {
-          # purple line
-          
-          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Purple Line") {
-            dataToUse[i,18] = designatedRadius # radius
-          } else {
-            if (dataToUse[i,18] != designatedRadius) {
-              dataToUse[i,18] = 0 # radius
-            }
-          }
-          
-          dataToUse[i,17] <- "#482887"
-          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Purple Line")
-          
-          linesOnStation <- linesOnStation + 1
-        }
-        
-        if (dataToUse[i,13] == "true") {
-          # yellow line
-          
-          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Yellow Line") {
-            dataToUse[i,18] = designatedRadius # radius
-          } else {
-            if (dataToUse[i,18] != designatedRadius) {
-              dataToUse[i,18] = 0 # radius
-            }
-          }
-          
-          dataToUse[i,17] <- "#f0e21b"
-          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Yellow Line")
-          
-          linesOnStation <- linesOnStation + 1
-        }
-        
-        if (dataToUse[i,14] == "true") {
-          # pink line
-          
-          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Pink Line") {
-            dataToUse[i,18] = designatedRadius # radius
-          } else {
-            if (dataToUse[i,18] != designatedRadius) {
-              dataToUse[i,18] = 0 # radius
-            }
-          }
-          
-          dataToUse[i,17] <- "#d57a9e"
-          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Pink Line")
-          
-          linesOnStation <- linesOnStation + 1
-        }
-        
-        if (dataToUse[i,15] == "true") {
-          # orange line
-          
-          if (input$linesOnMap == "All Lines" || input$linesOnMap == "Orange Line") {
-            dataToUse[i,18] = designatedRadius # radius
-          } else {
-            if (dataToUse[i,18] != designatedRadius) {
-              dataToUse[i,18] = 0 # radius
-            }
-          }
-          
-          dataToUse[i,17] <- "#dd4b26"
-          dataToUse[i,16] <- paste0(dataToUse[i,16], "<br>", "Orange Line")
-          
-          linesOnStation <- linesOnStation + 1
-        }
-        
-        if (linesOnStation > 1) {
-          dataToUse[i,17] <- "#676767"
-        }
+        linesOnStation <- linesOnStation + 1
       }
+      
+      if (dataToUse[i,10] == "true") {
+        # blue line
+        
+        if (input$linesOnMap == "All Lines" || input$linesOnMap == "Blue Line") {
+          dataToUse[i,19] = designatedRadius # radius
+        } else {
+          if (dataToUse[i,19] != designatedRadius) {
+            dataToUse[i,19] = 0 # radius
+          }
+        }
+        
+        dataToUse[i,18] <- "#3c95d6"
+        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Blue Line")
+        
+        linesOnStation <- linesOnStation + 1
+      }
+      
+      if (dataToUse[i,11] == "true") {
+        # green line
+        
+        if (input$linesOnMap == "All Lines" || input$linesOnMap == "Green Line") {
+          dataToUse[i,19] = designatedRadius # radius
+        } else {
+          if (dataToUse[i,19] != designatedRadius) {
+            dataToUse[i,19] = 0 # radius
+          }
+        }
+        
+        dataToUse[i,18] <- "#359140"
+        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Green Line")
+        
+        linesOnStation <- linesOnStation + 1
+      }
+      
+      if (dataToUse[i,12] == "true") {
+        # brown line
+        
+        if (input$linesOnMap == "All Lines" || input$linesOnMap == "Brown Line") {
+          dataToUse[i,19] = designatedRadius # radius
+        } else {
+          if (dataToUse[i,19] != designatedRadius) {
+            dataToUse[i,19] = 0 # radius
+          }
+        }
+        
+        dataToUse[i,18] <- "#964B00"
+        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Brown Line")
+        
+        linesOnStation <- linesOnStation + 1
+      }
+      
+      if (dataToUse[i,13] == "true") {
+        # purple line
+        
+        if (input$linesOnMap == "All Lines" || input$linesOnMap == "Purple Line") {
+          dataToUse[i,19] = designatedRadius # radius
+        } else {
+          if (dataToUse[i,19] != designatedRadius) {
+            dataToUse[i,19] = 0 # radius
+          }
+        }
+        
+        dataToUse[i,18] <- "#482887"
+        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Purple Line")
+        
+        linesOnStation <- linesOnStation + 1
+      }
+      
+      if (dataToUse[i,14] == "true") {
+        # yellow line
+        
+        if (input$linesOnMap == "All Lines" || input$linesOnMap == "Yellow Line") {
+          dataToUse[i,19] = designatedRadius # radius
+        } else {
+          if (dataToUse[i,19] != designatedRadius) {
+            dataToUse[i,19] = 0 # radius
+          }
+        }
+        
+        dataToUse[i,18] <- "#f0e21b"
+        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Yellow Line")
+        
+        linesOnStation <- linesOnStation + 1
+      }
+      
+      if (dataToUse[i,15] == "true") {
+        # pink line
+        
+        if (input$linesOnMap == "All Lines" || input$linesOnMap == "Pink Line") {
+          dataToUse[i,19] = designatedRadius # radius
+        } else {
+          if (dataToUse[i,19] != designatedRadius) {
+            dataToUse[i,19] = 0 # radius
+          }
+        }
+        
+        dataToUse[i,18] <- "#d57a9e"
+        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Pink Line")
+        
+        linesOnStation <- linesOnStation + 1
+      }
+      
+      if (dataToUse[i,16] == "true") {
+        # orange line
+        
+        if (input$linesOnMap == "All Lines" || input$linesOnMap == "Orange Line") {
+          dataToUse[i,19] = designatedRadius # radius
+        } else {
+          if (dataToUse[i,19] != designatedRadius) {
+            dataToUse[i,19] = 0 # radius
+          }
+        }
+        
+        dataToUse[i,18] <- "#dd4b26"
+        dataToUse[i,17] <- paste0(dataToUse[i,17], "<br>", "Orange Line")
+        
+        linesOnStation <- linesOnStation + 1
+      }
+      
+      if (linesOnStation > 1) {
+        dataToUse[i,18] <- "#676767"
+      }
+    }
     
     m <- m %>% addCircleMarkers(data = dataToUse, ~long, ~lat,
                                 popup = dataToUse$popUp,
-                                weight = 0,
+                                weight = 1,
                                 radius = dataToUse$radius,
                                 color = "black",
                                 fillColor = dataToUse$colorToUse,
@@ -565,7 +569,8 @@ server <- function(input, output, session) {
               input$single_date_input,
               input$range_date_check,
               input$range_start_date_input,
-              input$range_end_date_input)
+              input$range_end_date_input,
+              input$Year)
   
   #################################################################
   
@@ -573,7 +578,7 @@ server <- function(input, output, session) {
   
   output$mainBarGraph <- renderPlot({
     
-    df = sum_of_station_df_react_date_station()
+    df = sum_of_station_df()
     toReturn <- NULL
     
     if (input$bar_chart_type == "Alphabetical") {
@@ -649,8 +654,8 @@ server <- function(input, output, session) {
   output$mainTable <- renderUI({
     # format the table layout
     
-    toReturn <- sum_of_station_df_react_date()
-
+    toReturn <- sum_of_station_df()
+    
     # rename
     names(toReturn)[2] <- "Station"
     names(toReturn)[4] <- "Entries"
@@ -704,83 +709,56 @@ server <- function(input, output, session) {
   
   # create sum of rides for a station
   
-  sum_of_station_df_react_date_station <- reactive({
+  sum_of_station_df <- reactive({
     entries <- NULL
     
-    if (input$single_date_check) {
-      entries <- array(unlist(
-        lapply(unique_all_data_df$stationname,
-               sum_of_station_single_date)
-      )
-      )
-    }
-    
-    if (input$range_date_check) {
-      start <- array(unlist(
-        lapply(unique_all_data_df$stationname,
-               sum_of_station_start_date)
-      )
-      )
-      
-      end <- array(unlist(
-        lapply(station_names,
-               sum_of_station_end_date)
-      )
-      )
-      
-      if (input$range_start_date_input > input$range_end_date_input) {
-        entries <- array(unlist(Map('-', start, end)))
-      } else {
-        entries <- array(unlist(Map('-', end, start)))
+    if (input$tabs == "allStations" && input$tabs != "oneStation") {
+      if (input$single_date_check) {
+        entries <- array(unlist(
+          lapply(unique_all_data_df$stationname,
+                 sum_of_station_single_date)
+          )
+        )
       }
       
+      if (input$range_date_check) {
+        start <- array(unlist(
+          lapply(unique_all_data_df$stationname,
+                 sum_of_station_start_date)
+          )
+        )
+        
+        end <- array(unlist(
+          lapply(unique_all_data_df$stationname,
+                 sum_of_station_end_date)
+          )
+        )
+        
+        if (input$range_start_date_input > input$range_end_date_input) {
+          entries <- array(unlist(Map('-', start, end)))
+        } else {
+          entries <- array(unlist(Map('-', end, start)))
+        }
+        
+      }
+    }
+    
+    else if (input$tabs == "oneStation" && input$tabs != "allStations") {
+      entries <- array(unlist(
+        lapply(unique_all_data_df$stationname,
+               sum_of_station_single_year)
+        )
+      )
     }
     
     # create a data frame with station names and sum of rides for the stations
-    toReturn <- unique_all_data_df
-    toReturn$rides <- entries
+    unique_all_data_df$rides <- entries
     
     # add a column to state whether to highlight or not
-    toReturn <- toReturn %>% rowwise() %>%
+    unique_all_data_df <- unique_all_data_df %>% rowwise() %>%
       mutate(toHighlight = if_else(stationname == input$stations, "Yes", "No"))
     
     
-    toReturn
-  })
-  
-  sum_of_station_df_react_date <- reactive({
-    entries <- NULL
-    
-    if (input$single_date_check) {
-      entries <- array(unlist(
-        lapply(unique_all_data_df$stationname,
-               sum_of_station_single_date)
-      )
-      )
-    }
-    
-    if (input$range_date_check) {
-      start <- array(unlist(
-        lapply(unique_all_data_df$stationname,
-               sum_of_station_start_date)
-      )
-      )
-      
-      end <- array(unlist(
-        lapply(unique_all_data_df$stationname,
-               sum_of_station_end_date)
-      )
-      )
-      
-      if (input$range_start_date_input > input$range_end_date_input) {
-        entries <- array(unlist(Map('-', start, end)))
-      } else {
-        entries <- array(unlist(Map('-', end, start)))
-      }
-      
-    }
-    
-    unique_all_data_df$rides <- entries
     unique_all_data_df
   })
   
@@ -799,7 +777,10 @@ server <- function(input, output, session) {
     sum(df[df$stationname == station,]$rides)
   }
   
-  
+  sum_of_station_single_year <- function(station) {
+    df <- subset(all_data_df, all_data_df$year == input$Year)
+    sum(df[df$stationname == station,]$rides)
+  }
   
   output$mainMap <- renderLeaflet({
     addCirclesMarkers()
@@ -903,15 +884,17 @@ server <- function(input, output, session) {
   
   temp_halsted <- get_station_df('UIC-Halsted')
   temp_halsted <- do.call(rbind.data.frame, temp_halsted)
-
+  
   halsted_by_year <- temp_halsted %>%
     mutate(year = format(newDate, "%Y")) %>%
     group_by(year) %>%
     summarise(rides = sum(rides))
   halsted_2021 <- temp_halsted %>% filter(year(temp_halsted$newDate) == 2021)
   
-  selection <- reactiveValues(station = 'UIC-Halsted', chart = 'Daily', year = 2021,
-                              data1 = halsted_by_year, data2 = halsted_2021, color = "#0099f9")
+  selection <- NULL
+  # 
+  # selection <- reactiveValues(station = 'UIC-Halsted', chart = 'Daily', year = 2021,
+  #                             data1 = halsted_by_year, data2 = halsted_2021, color = "#0099f9")
   observeEvent({
     input$Station
     input$Chart
@@ -1028,7 +1011,7 @@ server <- function(input, output, session) {
       if (selection$chart == 'Daily') {
         
         datebreaks <- seq(as.Date(min(selection$data2$newDate)), as.Date(max(selection$data2$newDate)), by = "2 month")
-
+        
         output$Station_Bar <- renderPlot({
           ggplot(selection$data2, aes(newDate, rides)) +
             geom_col(width = 0.7, fill = selection$color) +
