@@ -18,7 +18,6 @@ library(sf)
 # assume all of the tsv files in this directory are data of the same kind that I want to visualize
 entriesData <- do.call(rbind, lapply(list.files(pattern = "*Totals.tsv"), read.delim))
 locData <- do.call(rbind, lapply(list.files(pattern = "*Stops.tsv"), read.delim))
-locData <- data.frame(locData)
 
 Randolph <- data.frame(NA, NA, NA, NA, NA, 40200, NA, "false", "false", "true", "true", "true", "false", "false", "true", "true", NA, 41.884431,  -87.626149)
 names(Randolph) <- c("STOP_ID", "DIRECTION_ID", "STOP_NAME", "STATION_NAME", "STATION_DESCRIPTIVE_NAME", "MAP_ID", "ADA", "RED", "BLUE", "G", "BRN", "P", "Pexp", "Y", "Pnk", "O", "Location", "lat", "long")
@@ -56,6 +55,11 @@ for (i in 1:nrow(locData)) {
       }
 
       # Purple Line
+      if (locData[i,12] == "true") {
+        locData[j,12] = "true"
+      }
+
+      # Purple Express Line
       if (locData[i,13] == "true") {
         locData[j,13] = "true"
       }
@@ -91,7 +95,6 @@ all_data_df$lat <- locData$lat[match(all_data_df$station_id, locData$MAP_ID)]
 
 # getting rid of the stations with no location info
 all_data_df <- subset(all_data_df, !is.na(long))
-
 all_data_df$RedLine <- locData$RED[match(all_data_df$station_id, locData$MAP_ID)]
 all_data_df$BlueLine <- locData$BLUE[match(all_data_df$station_id, locData$MAP_ID)]
 all_data_df$GreenLine <- locData$G[match(all_data_df$station_id, locData$MAP_ID)]
@@ -116,6 +119,7 @@ getStationName <- function(station) {
   }
   toReturn
 }
+
 
 red_s_names <- data.frame(stationname = c())
 blue_s_names <- data.frame(stationname = c())
@@ -150,8 +154,13 @@ for (i in 1:nrow(locData)) {
     brown_s_names <- rbind(brown_s_names,getStationName(locData[i,6]))
   }
 
-  if (locData[i,13] == "true") {
+  if (locData[i,12] == "true") {
     #Purple
+    purple_s_names <- rbind(purple_s_names,getStationName(locData[i,6]))
+  }
+
+  if (locData[i,13] == "true") {
+    #Purple Express
     purple_s_names <- rbind(purple_s_names,getStationName(locData[i,6]))
   }
 
@@ -185,15 +194,6 @@ colnames(purple_s_names) <- "stationname"
 
 #####
 
-
-Red_df <- subset(all_data_df, all_data_df$RedLine == "true")
-Blue_df <- subset(all_data_df, all_data_df$BlueLine == "true")
-Green_df <- subset(all_data_df, all_data_df$GreenLine == "true")
-Brown_df <- subset(all_data_df, all_data_df$BrownLine == "true")
-Purple_df <- subset(all_data_df, all_data_df$PurpleLine == "true")
-Yellow_df <- subset(all_data_df, all_data_df$YellowLine == "true")
-Pink_df <- subset(all_data_df, all_data_df$PinkLine == "true")
-Orange_df <- subset(all_data_df, all_data_df$OrangeLine == "true")
 
 unique_all_data_df <- all_data_df[!duplicated(all_data_df[,c('stationname')]),]
 unique_all_data_df <- unique_all_data_df[order(unique_all_data_df$stationname), ]
@@ -271,7 +271,7 @@ ui <- dashboardPage(
               sidebarLayout(
                 position = "left",
                 sidebarPanel(
-                  style = "margin-top:60%; padding: 15px;",
+                  style = "margin-top:100%; padding: 15px;",
                   checkboxInput("single_date_check",
                                 label = "Single Date",
                                 value = TRUE
@@ -321,7 +321,7 @@ ui <- dashboardPage(
                   actionButton("next_day_btn",
                                label = "Next Day"
                   ),
-                  width = 2
+                  width = 1
                 ),
                 mainPanel(
                   tags$style(type = "text/css", "#mainMap {height: calc(45vh) !important;}"),
@@ -330,13 +330,13 @@ ui <- dashboardPage(
                   tags$style(HTML('.btn-primary, .btn-primary:hover, .btn-primary:active, .btn-primary:visited {background-color: #8064A2 !important;}')),
                   
                   fluidRow(
-                    column(7,
+                    column(5,
                            box(solidHeader = TRUE, status = "primary", width = 200,
                                div(plotOutput("mainBarGraph"))
                            )
                            
                     ),
-                    column(5,
+                    column(7,
                            box(solidHeader = TRUE, status = "primary", width = 200,
                                uiOutput("mainTable"),
                            ),
@@ -346,7 +346,7 @@ ui <- dashboardPage(
                            )
                     )
                   ),
-                  width = 10
+                  width = 11
                 )
               )
       ),
@@ -524,9 +524,6 @@ server <- function(input, output, session) {
       
       # minimum opacity
       min_opc <- 0.25
-      # if (dataToUse[i,21] < min_opc) {
-      #   dataToUse[i,21] <- min_opc
-      # }
       
       dataToUse[i,21] <- ((1 - min_opc) * as.numeric(dataToUse[i,21])) + min_opc
       
@@ -699,7 +696,8 @@ server <- function(input, output, session) {
               input$range_start_date_input,
               input$range_end_date_input,
               input$Year,
-              input$stations)
+              input$stations,
+              input$Station)
   
   #################################################################
   
@@ -796,7 +794,7 @@ server <- function(input, output, session) {
       toReturn <- toReturn[order(toReturn$Entries),]
     }
     else if (input$bar_chart_type == "Descending") {
-      toReturn <- toReturn[order(rev(toReturn$Entries)),]
+      toReturn <- toReturn[rev(order(toReturn$Entries)),]
     }
     
     # add comma - turns into char
@@ -846,7 +844,7 @@ server <- function(input, output, session) {
         entries <- array(unlist(
           lapply(unique_all_data_df$stationname,
                  sum_of_station_single_date)
-          )
+        )
         )
       }
       
@@ -854,13 +852,13 @@ server <- function(input, output, session) {
         start <- array(unlist(
           lapply(unique_all_data_df$stationname,
                  sum_of_station_start_date)
-          )
+        )
         )
         
         end <- array(unlist(
           lapply(unique_all_data_df$stationname,
                  sum_of_station_end_date)
-          )
+        )
         )
         
         if (input$range_start_date_input > input$range_end_date_input) {
@@ -876,16 +874,22 @@ server <- function(input, output, session) {
       entries <- array(unlist(
         lapply(unique_all_data_df$stationname,
                sum_of_station_single_year)
-        )
+      )
       )
     }
     
     # create a data frame with station names and sum of rides for the stations
     unique_all_data_df$rides <- entries
     
-    # add a column to state whether to highlight or not
-    unique_all_data_df <- unique_all_data_df %>% rowwise() %>%
-      mutate(toHighlight = if_else(stationname == input$stations, "Yes", "No"))
+    if(input$tabs == "allStations"){
+      unique_all_data_df <- unique_all_data_df %>% rowwise() %>%
+        mutate(toHighlight = if_else(stationname == input$stations, "Yes", "No"))
+    }
+    
+    if(input$tabs == "oneStation"){
+      unique_all_data_df <- unique_all_data_df %>% rowwise() %>%
+        mutate(toHighlight = if_else(stationname == input$Station, "Yes", "No"))
+    }
     
     
     unique_all_data_df
@@ -993,6 +997,7 @@ server <- function(input, output, session) {
     ### Here get stationname from all_data_df from id, then update with that
     
     updateSelectInput(session, 'stations', selected = click$id)
+    updateSelectInput(session, 'Station', selected = click$id)
   })
   
   output$mainMap2 <- renderLeaflet({
@@ -1007,7 +1012,7 @@ server <- function(input, output, session) {
       return()
     
     ### Here get stationname from id, then update with that
-    
+    updateSelectInput(session, 'stations', selected = click2$id)
     updateSelectInput(session, 'Station', selected = click2$id)
   })
   
@@ -1047,56 +1052,83 @@ server <- function(input, output, session) {
       shinyjs::hide("PinkLine")
       shinyjs::hide("OrangeLine")
       
+      
+      b <- 0
+      r <- 0
+      g <- 0
+      y <- 0
+      pr <- 0
+      pnk <- 0
+      o <- 0
+      brn <-0
       for (i in 1:nrow(locData)) {
         if (locData[i,6] == getMapID(input$Station)) {
           if (locData[i,8] == "true") {
             updateActionButton(session, "RedLine")
+            selection$color <- "#e92f2f"
             shinyjs::show("RedLine")
+            r <- 1
           }
           
           if (locData[i,9] == "true") {
             updateActionButton(session, "BlueLine")
+            selection$color <- "#3c95d6"
             shinyjs::show("BlueLine")
+            b <- 1
           }
           
           if (locData[i,10] == "true") {
             updateActionButton(session, "GreenLine")
+            selection$color <- "#359140"
             shinyjs::show("GreenLine")
+            g <- 1
           }
           
           if (locData[i,11] == "true") {
             updateActionButton(session, "BrownLine")
+            selection$color <- "#964B00"
             shinyjs::show("BrownLine")
+            brn <- 1
           }
           
-          if (locData[i,13] == "true") {
+          if (locData[i,13] == "true" | locData[i,12] == "true") {
             updateActionButton(session, "PurpleLine")
+            selection$color <- "#482887"
             shinyjs::show("PurpleLine")
+            pr <- 1
           }
           
           if (locData[i,14] == "true") {
             updateActionButton(session, "YellowLine")
+            selection$color <- "#f0e21b"
             shinyjs::show("YellowLine")
+            y <- 1
           }
           
           if (locData[i,15] == "true") {
             updateActionButton(session, "PinkLine")
+            selection$color <- "#d57a9e"
             shinyjs::show("PinkLine")
+            pnk <- 1
           }
           
           if (locData[i,16] == "true") {
             updateActionButton(session, "OrangeLine")
+            selection$color <- "#dd4b26"
             shinyjs::show("OrangeLine")
+            o <- 1
           }
         }
+      }
+      lval <- r + g + b + y + o + pr + pnk + brn
+      if(lval>1){
+        selection$color <- "#676767";
       }
       
       selection$data1 <- temp %>%
         mutate(year = format(newDate, "%Y")) %>%
         group_by(year) %>%
         summarise(rides = sum(rides))
-      
-      selection$color <- "#0099f9"
       
       if (input$Chart == "Daily") {
         selection$data2 <- selection$data2 %>% filter(year(selection$data2$newDate) == input$Year)
@@ -1135,7 +1167,7 @@ server <- function(input, output, session) {
       if (selection$chart == 'Daily') {
         
         # datebreaks <- seq(as.Date(min(selection$data2$newDate)), as.Date(max(selection$data2$newDate)), by = "2 month")
-
+        
         output$Station_Bar <- renderPlot({
           ggplot(selection$data2, aes(newDate, rides)) +
             geom_col(width = 0.7, fill = selection$color) +
@@ -1289,7 +1321,7 @@ server <- function(input, output, session) {
     "Created by: Akash Magnadia & Kazi Shahrukh Omar\n
          Created: March 12th, 2022\n
          Data Source:\n
-         1. Location data of CTA L Stations: https://data.cityofchicago.org/Transportation/CTA-Ridership-L-Station-Entries-Daily-Totals/5neh-572f\n
+         1. Location data of CTA L Stations: https://data.cityofchicago.org/Transportation/CTA-System-Information-List-of-L-Stops/8pix-ypme\n
          2. Ridership data of CTA L Stations: https://data.cityofchicago.org/Transportation/CTA-Ridership-L-Station-Entries-Daily-Totals/5neh-572f\n
          Data Category: Transportation\n
          Data Owner: Chicago Transit Authority\n
